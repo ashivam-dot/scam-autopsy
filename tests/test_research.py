@@ -314,8 +314,55 @@ class ResearchRunTests(unittest.TestCase):
         checked = datetime.now(timezone.utc)
         articles = [(URL, "QR scam"), (OTHER_URL, "Car scam")]
         prior = {"checked_at": (checked - timedelta(hours=7)).isoformat(),
-                 "rejected": [{"source_url": URL, "reason": "writer validation: scene 1 invalid"}]}
+                 "rejected": [{"source_url": URL, "reason": "writer validation: scene 1 invalid"}],
+                 "source_rejection_until": {
+                     URL: (checked - timedelta(minutes=1)).isoformat()}}
         self.assertEqual(research._deprioritize_recent_rejections(articles, prior, checked), articles)
+
+    def test_service_failure_preserves_prior_source_rejection_for_next_run(self):
+        from datetime import datetime, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "rejected": [{"source_url": URL,
+                          "reason": "reviewer rejected: scene 1: factual_fidelity"}],
+        }))
+
+        def unavailable(_session, _key, _model, _prompt, budget, _temperature, _role):
+            budget[0] += 1
+            raise research.ModelTransient(503)
+
+        models = ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.7-flash",
+                  "gemma-4-31b-it")
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(URL, "QR scam"),
+                                                                         (OTHER_URL, "Car scam")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=unavailable), \
+             patch.object(research.time, "sleep"):
+            self.assertEqual(self.run_it(limit=1), [])
+        failed_state = json.loads(self.state.read_text())
+        self.assertEqual(failed_state["rejected"], [])
+        self.assertIn(URL, failed_state["source_rejection_until"])
+
+        fetched = []
+
+        def get_public(_session, url):
+            fetched.append(url)
+            return b"html"
+
+        with patch.object(research, "_model_names", return_value=("gemma-4-26b-a4b-it",
+                                                                   "gemma-4-31b-it")), \
+             patch.object(research, "discover_articles", return_value=[(URL, "QR scam"),
+                                                                         (OTHER_URL, "Car scam")]), \
+             patch.object(research, "_get_public", side_effect=get_public), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(OTHER_URL), review()]):
+            paths = self.run_it(limit=1)
+        self.assertEqual(fetched, [OTHER_URL])
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [OTHER_URL])
 
     def test_approved_source_dedupes_even_when_recent_rejection_reorders_feed(self):
         from datetime import datetime, timezone
@@ -557,9 +604,110 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(chosen, ["gemini-3.1-flash-lite", "gemma-4-31b-it"])
         state = json.loads(self.state.read_text())
         self.assertEqual(state["writer_order"][:2],
-                         ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"])
+                         ["gemini-3.1-flash-lite", "gemma-4-26b-a4b-it"])
         self.assertEqual(state["reviewer_order"][0], "gemma-4-31b-it")
         self.assertEqual(state["generation_calls"], 2)
+
+    def test_fresh_lite_writes_first_but_cooling_survives_unrelated_failure(self):
+        from datetime import datetime, timedelta, timezone
+        models = research.FREE_TIER_CANDIDATES
+        chosen = []
+        current_url = [URL]
+
+        def generate(_session, _key, model, _prompt, budget, _temperature, role):
+            budget[0] += 1
+            chosen.append((model, role))
+            return script(current_url[0]) if role == "writer" else review()
+
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            self.assertEqual(len(self.run_it(limit=1)), 1)
+        self.assertEqual(chosen[0], ("gemini-3.5-flash-lite", "writer"))
+        fresh_state = json.loads(self.state.read_text())
+        self.assertEqual(fresh_state["writer_order"][:3],
+                         ["gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                          "gemma-4-26b-a4b-it"])
+
+        # The next run has recent outages for both Lite models and 3.7 Flash.
+        until = (datetime.now(timezone.utc) + timedelta(hours=5)).isoformat()
+        fresh_state["model_transient_until"] = {model: until for model in
+                                                 ("gemini-3.5-flash-lite",
+                                                  "gemini-3.1-flash-lite", "gemini-3.7-flash")}
+        self.state.write_text(json.dumps(fresh_state))
+        with patch.object(research, "_model_names", side_effect=research.ResearchError(
+                "catalog temporarily unavailable")):
+            self.assertEqual(self.run_it(limit=1), [])
+        failed_state = json.loads(self.state.read_text())
+        self.assertEqual(set(failed_state["model_transient_until"]),
+                         {"gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.7-flash"})
+
+        chosen.clear()
+        current_url[0] = OTHER_URL
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(OTHER_URL, "Scam two")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE + OTHER_URL), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            self.assertEqual(len(self.run_it(limit=1)), 1)
+        self.assertEqual(chosen[0], ("gemma-4-26b-a4b-it", "writer"))
+        self.assertEqual(chosen[1], ("gemma-4-31b-it", "reviewer"))
+        cooled_state = json.loads(self.state.read_text())
+        self.assertEqual(cooled_state["writer_order"][0], "gemma-4-26b-a4b-it")
+        self.assertGreater(cooled_state["writer_order"].index("gemini-3.5-flash-lite"),
+                           cooled_state["writer_order"].index("gemma-4-31b-it"))
+
+    def test_recent_reviewer_transient_moves_behind_healthy_reviewers(self):
+        from datetime import datetime, timedelta, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({"model_transient_until": {
+            "gemma-4-31b-it": (datetime.now(timezone.utc) + timedelta(hours=5)).isoformat()}}))
+        chosen = []
+
+        def generate(_session, _key, model, _prompt, budget, _temperature, role):
+            budget[0] += 1
+            chosen.append((model, role))
+            return script(URL) if role == "writer" else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(chosen, [("gemini-3.5-flash-lite", "writer"),
+                                  ("gemini-3.5-flash", "reviewer")])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["reviewer_order"][0], "gemini-3.5-flash")
+        self.assertEqual(state["reviewer_order"][-1], "gemma-4-31b-it")
+        self.assertEqual(state["generation_calls"], 2)
+
+    def test_cooldown_maps_drop_unsafe_unknown_expired_and_excess_entries(self):
+        from datetime import datetime, timedelta, timezone
+        checked = datetime.now(timezone.utc)
+        active = (checked + timedelta(hours=5)).isoformat()
+        expired = (checked - timedelta(seconds=1)).isoformat()
+        model_state = {"model_transient_until": {"gemini-3.5-flash-lite": active,
+                                                  "unknown-paid-model": active,
+                                                  "gemini-3.7-flash": expired}}
+        self.assertEqual(research._model_cooldowns(model_state, checked),
+                         {"gemini-3.5-flash-lite": active})
+        urls = [f"https://consumer.ftc.gov/consumer-alerts/2026/09/fake-listing-{i}"
+                for i in range(45)]
+        source_state = {"source_rejection_until": {**{url: active for url in urls},
+                                                    "https://evil.example/consumer-alerts/2026/09/a": active,
+                                                    "https://consumer.ftc.gov/consumer-alerts/2026/09/x?x=1": active,
+                                                    "https://consumer.ftc.gov/consumer-alerts/2026/09/old": expired}}
+        retained = research._source_cooldowns(source_state, checked)
+        self.assertEqual(len(retained), research.MAX_SOURCE_COOLDOWNS)
+        self.assertTrue(set(retained).issubset(set(urls)))
+        old = {"model_transient_until": {"gemini-3.5-flash-lite": expired}}
+        self.assertEqual(research._deprioritize_recent_transients(
+            ("gemini-3.5-flash-lite", "gemma-4-26b-a4b-it"), old, checked),
+            ("gemini-3.5-flash-lite", "gemma-4-26b-a4b-it"))
 
     def test_lite_only_models_cannot_approve_without_full_flash_reviewer(self):
         models = ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite")

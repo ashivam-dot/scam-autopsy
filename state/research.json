@@ -64,5 +64,8 @@
   "status": "failed",
   "generation_calls": 3,
   "rejected": [],
-  "error": "Gemini generation budget cannot cover separate review; last gemini-3.7-flash writer: HTTP 429"
+  "error": "Gemini generation budget cannot cover separate review; last gemini-3.7-flash writer: HTTP 429",
+  "source_rejection_until": {
+    "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet": "2026-10-09T00:43:11.770063+00:00"
+  }
 }

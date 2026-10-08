@@ -21,7 +21,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   studio:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     env:
       YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}

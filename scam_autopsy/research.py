@@ -40,6 +40,8 @@ MAX_CITATION_SOURCE_CHARS = 14_000
 MAX_CITATION_PASSAGES = 48
 MAX_CITATION_CHARS = 500
 CITATION_OVERLAP = 100
+COOLDOWN_HOURS = 6
+MAX_SOURCE_COOLDOWNS = 40
 TIMEOUT = (5, 25)
 GENERATION_TIMEOUT = (10, 90)
 USER_AGENT = "Mozilla/5.0 (compatible; ScamAutopsyResearch/1.0; +https://consumer.ftc.gov/)"
@@ -216,20 +218,83 @@ def _model_names(session: requests.Session, key: str) -> tuple[str, ...]:
     return tuple(chosen)
 
 
-def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[str, Any],
-                                    checked: datetime) -> tuple[str, ...]:
-    """Use other free model quotas first after a recent 429/service outage."""
+def _recent_state_time(prior_state: dict[str, Any], checked: datetime) -> datetime | None:
     try:
         previous = datetime.fromisoformat(prior_state.get("checked_at", ""))
-        if previous.tzinfo is None or not timedelta(0) <= checked - previous <= timedelta(hours=6):
-            return models
+        if previous.tzinfo and timedelta(0) <= checked - previous < timedelta(hours=COOLDOWN_HOURS):
+            return previous
     except (TypeError, ValueError):
-        return models
+        pass
+    return None
+
+
+def _active_until(value: Any, checked: datetime) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        until = datetime.fromisoformat(value)
+    except ValueError:
+        return None
+    if until.tzinfo and checked < until <= checked + timedelta(hours=COOLDOWN_HOURS):
+        return until
+    return None
+
+
+def _model_cooldowns(prior_state: dict[str, Any], checked: datetime) -> dict[str, str]:
+    raw = prior_state.get("model_transient_until", {})
+    active: dict[str, datetime] = {}
+    if isinstance(raw, dict):
+        for model, value in raw.items():
+            until = _active_until(value, checked)
+            if model in FREE_TIER_CANDIDATES and until:
+                active[model] = until
+    previous = _recent_state_time(prior_state, checked)
     attempts = prior_state.get("generation_attempts", [])
-    if not isinstance(attempts, list):
-        return models
-    cooling = {attempt.get("model") for attempt in attempts if isinstance(attempt, dict) and
-               attempt.get("status") in ("transient", "read_timeout")}
+    if previous and isinstance(attempts, list):
+        until = previous + timedelta(hours=COOLDOWN_HOURS)
+        for attempt in attempts:
+            if (isinstance(attempt, dict) and attempt.get("model") in FREE_TIER_CANDIDATES and
+                    attempt.get("status") in ("transient", "read_timeout")):
+                model = attempt["model"]
+                active[model] = max(active.get(model, until), until)
+    return {model: until.isoformat() for model, until in active.items()}
+
+
+def _safe_article_url(value: Any) -> bool:
+    if not isinstance(value, str):
+        return False
+    try:
+        return canonical_source_url(value) == value and urlsplit(value).hostname == "consumer.ftc.gov"
+    except ResearchError:
+        return False
+
+
+def _source_cooldowns(prior_state: dict[str, Any], checked: datetime) -> dict[str, str]:
+    raw = prior_state.get("source_rejection_until", {})
+    active: dict[str, datetime] = {}
+    if isinstance(raw, dict):
+        for url, value in raw.items():
+            until = _active_until(value, checked)
+            if _safe_article_url(url) and until:
+                active[url] = until
+    previous = _recent_state_time(prior_state, checked)
+    rejected = prior_state.get("rejected", [])
+    if previous and isinstance(rejected, list):
+        until = previous + timedelta(hours=COOLDOWN_HOURS)
+        for item in rejected:
+            if (isinstance(item, dict) and _safe_article_url(item.get("source_url")) and
+                    isinstance(item.get("reason"), str) and
+                    item["reason"].startswith(("writer validation:", "reviewer rejected:"))):
+                url = item["source_url"]
+                active[url] = max(active.get(url, until), until)
+    newest = sorted(active.items(), key=lambda entry: (entry[1], entry[0]), reverse=True)
+    return {url: until.isoformat() for url, until in newest[:MAX_SOURCE_COOLDOWNS]}
+
+
+def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[str, Any],
+                                    checked: datetime) -> tuple[str, ...]:
+    """Use healthy free-model quotas before models cooling from a transient failure."""
+    cooling = _model_cooldowns(prior_state, checked)
     return tuple(model for model in models if model not in cooling) + tuple(
         model for model in models if model in cooling)
 
@@ -237,19 +302,7 @@ def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[s
 def _deprioritize_recent_rejections(articles: list[tuple[str, str]], prior_state: dict[str, Any],
                                     checked: datetime) -> list[tuple[str, str]]:
     """Try fresh topics first after a recent writer or reviewer rejection."""
-    try:
-        previous = datetime.fromisoformat(prior_state.get("checked_at", ""))
-        if previous.tzinfo is None or not timedelta(0) <= checked - previous <= timedelta(hours=6):
-            return articles
-    except (TypeError, ValueError):
-        return articles
-    rejected = prior_state.get("rejected", [])
-    if not isinstance(rejected, list):
-        return articles
-    cooling = {item.get("source_url") for item in rejected if isinstance(item, dict) and
-               isinstance(item.get("source_url"), str) and
-               isinstance(item.get("reason"), str) and
-               item["reason"].startswith(("writer validation:", "reviewer rejected:"))}
+    cooling = _source_cooldowns(prior_state, checked)
     return [article for article in articles if article[0] not in cooling] + [
         article for article in articles if article[0] in cooling]
 
@@ -500,6 +553,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
     state = {k: v for k, v in state.items() if k in ("used_source_urls", "used_source_hashes",
                                                     "model_unavailable_until")}
     checked = datetime.now(timezone.utc)
+    state["model_transient_until"] = _model_cooldowns(prior_state, checked)
+    state["source_rejection_until"] = _source_cooldowns(prior_state, checked)
     unavailable: dict[str, str] = {}
     for model, until in state.get("model_unavailable_until", {}).items():
         try:
@@ -512,28 +567,40 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
     state["checked_at"] = checked.isoformat()
     budget = [0]
     attempts: list[dict[str, str]] = []
+    rejected: list[dict[str, str]] = []
     state["generation_attempts"] = attempts
+    state["rejected"] = rejected
+
+    def save_state() -> None:
+        state["model_transient_until"] = _model_cooldowns(state, checked)
+        state["source_rejection_until"] = _source_cooldowns(state, checked)
+        _write_json(state_file, state)
+
     try:
         if not key:
             raise ResearchError("GEMINI_API_KEY is unavailable")
         used_urls, used_hashes, used_ids = _existing(content_dir, state)
-        models = _deprioritize_recent_transients(_model_names(session, key), prior_state, checked)
-        reviewer_models = tuple(model for model in REVIEWER_PREFERENCE if model in models)
-        writer_models = tuple(model for model in models if "flash-lite" in model) + tuple(
-            model for model in models if "flash-lite" not in model)
-        state["model_order"] = list(models)
+        models = _model_names(session, key)
+        reviewer_base = tuple(model for model in REVIEWER_PREFERENCE if model in models)
+        reviewer_models = _deprioritize_recent_transients(reviewer_base, state, checked)
+        writer_base = (tuple(model for model in models if "flash-lite" in model) +
+                       tuple(model for model in models if model == "gemma-4-26b-a4b-it") +
+                       tuple(model for model in models if model.startswith("gemini-") and
+                             "flash-lite" not in model) +
+                       tuple(model for model in models if model == "gemma-4-31b-it"))
+        writer_models = _deprioritize_recent_transients(writer_base, state, checked)
+        state["model_order"] = list(_deprioritize_recent_transients(models, state, checked))
         state["writer_order"] = list(writer_models)
         state["reviewer_order"] = list(reviewer_models)
         if (len([model for model in models if model not in unavailable]) < 2 or
                 not any(model not in unavailable for model in reviewer_models)):
             raise ResearchError("distinct free-tier Gemini writer and non-Lite reviewer are unavailable")
         pending: list[tuple[Path, dict[str, Any], str, str]] = []
-        rejected: list[dict[str, str]] = []
         stopped_reason = ""
         temporary_unavailable: set[str] = set()
         delayed = [False]
         fetched = 0
-        articles = _deprioritize_recent_rejections(discover_articles(session), prior_state, checked)
+        articles = _deprioritize_recent_rejections(discover_articles(session), state, checked)
         for url, title in articles:
             if len(pending) >= limit or fetched >= MAX_ARTICLE_FETCHES:
                 break
@@ -612,7 +679,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             status = "failed" if rejected or stopped_reason else "no_new_script"
             state.update(status=status, generation_calls=budget[0], rejected=rejected,
                          error=stopped_reason or ("no candidate passed review" if rejected else ""))
-            _write_json(state_file, state)
+            save_state()
             return []
         # Candidate-level rejection does not erase a previously approved script.
         for path, case, _, _ in pending:
@@ -624,12 +691,12 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
         state.update(status="partial_success" if rejected or stopped_reason else "passed",
                      generated=len(pending), generation_calls=budget[0], rejected=rejected,
                      stopped_reason=stopped_reason)
-        _write_json(state_file, state)
+        save_state()
         return [path for path, _, _, _ in pending]
     except (ResearchError, requests.RequestException, ET.ParseError, ValueError,
             KeyError, TypeError, AttributeError) as exc:
         state.update(status="failed", error=_safe_error(exc), generation_calls=budget[0])
-        _write_json(state_file, state)
+        save_state()
         return []
 
 
