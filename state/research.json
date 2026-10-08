@@ -1,8 +1,25 @@
 {
   "model_unavailable_until": {},
-  "checked_at": "2026-10-08T18:08:05.822994+00:00",
+  "checked_at": "2026-10-08T18:13:59.259621+00:00",
+  "generation_attempts": [
+    {
+      "model": "gemini-3.7-flash",
+      "status": "transient",
+      "detail": "writer: HTTP 429"
+    },
+    {
+      "model": "gemini-3.6-flash",
+      "status": "transient",
+      "detail": "writer: HTTP 429"
+    },
+    {
+      "model": "gemini-3.8-flash",
+      "status": "transient",
+      "detail": "writer: HTTP 503"
+    }
+  ],
   "status": "failed",
   "generation_calls": 3,
   "rejected": [],
-  "error": "no distinct Gemini reviewer model remains"
+  "error": "no distinct Gemini reviewer model remains; last gemini-3.8-flash writer: HTTP 503"
 }
