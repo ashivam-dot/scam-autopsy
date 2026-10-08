@@ -48,7 +48,7 @@
       "privacy": "private",
       "duration": "PT51S",
       "statistics": {
-        "viewCount": "0",
+        "viewCount": "1",
         "likeCount": "0",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -187,6 +187,18 @@
       "engagedViews": 1,
       "averageViewDuration": 12,
       "averageViewPercentage": 21.22,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "y8amwVeM8Pc",
+      "views": 1,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
       "likes": 0,
       "comments": 0,
       "shares": 0,
