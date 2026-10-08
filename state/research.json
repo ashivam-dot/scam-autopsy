@@ -1,6 +1,7 @@
 {
-  "checked_at": "2026-10-08T17:48:44.112083+00:00",
+  "model_unavailable_until": {},
+  "checked_at": "2026-10-08T17:58:33.566389+00:00",
   "status": "failed",
-  "error": "404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+  "error": "503 Server Error: Service Unavailable for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
   "generation_calls": 1
 }
