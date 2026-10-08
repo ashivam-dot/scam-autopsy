@@ -29,9 +29,10 @@ MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GENERATION_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 # Each model is listed with free input/output on Google's Gemini API pricing page.
 FREE_TIER_CANDIDATES = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
-                        "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash")
-REVIEWER_PREFERENCE = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash",
-                       "gemini-3.8-flash")
+                        "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash",
+                        "gemma-4-31b-it", "gemma-4-26b-a4b-it")
+REVIEWER_PREFERENCE = ("gemma-4-31b-it", "gemini-3.5-flash", "gemma-4-26b-a4b-it",
+                       "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash")
 MAX_GENERATION_CALLS = 4
 MAX_ARTICLE_FETCHES = 10
 MAX_BYTES = 1_000_000
@@ -67,6 +68,10 @@ class ModelTransient(ResearchError):
     def __init__(self, status_code: int | None = None):
         self.status_code = status_code if status_code in (429, 502, 503, 504) else None
         super().__init__("Gemini temporarily unavailable")
+
+
+class ModelOutputInvalid(ResearchError):
+    """A model response cannot be safely parsed as a complete JSON object."""
 
 
 def _safe_error(exc: Exception) -> str:
@@ -230,14 +235,17 @@ def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[s
 
 
 def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
-                 budget: list[int], temperature: float) -> dict[str, Any]:
+                 budget: list[int], temperature: float, role: str = "writer") -> dict[str, Any]:
     if model not in FREE_TIER_CANDIDATES:
         raise ResearchError("unconfigured Gemini model")
-    payload = {"contents": [{"parts": [{"text": prompt}]}],
-               "generationConfig": {"responseMimeType": "application/json", "temperature": temperature,
-                                    "maxOutputTokens": 6000}}
-    if "flash-lite" not in model:
-        payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
+    config = {"temperature": temperature, "maxOutputTokens": 6000}
+    if model.startswith("gemma-4-"):
+        config["thinkingConfig"] = {"thinkingLevel": "high" if role == "reviewer" else "minimal"}
+    else:
+        config["responseMimeType"] = "application/json"
+    if "flash-lite" not in model and not model.startswith("gemma-4-"):
+        config["thinkingConfig"] = {"thinkingLevel": "low"}
+    payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": config}
     if budget[0] >= MAX_GENERATION_CALLS:
         raise ResearchError("Gemini generation budget exhausted")
     budget[0] += 1
@@ -251,14 +259,18 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
     data = response.json()
     candidates = data.get("candidates") or []
     if not candidates or candidates[0].get("finishReason") != "STOP":
-        raise ResearchError("Gemini generation blocked or incomplete")
+        raise ModelOutputInvalid("generation blocked or incomplete")
     parts = candidates[0].get("content", {}).get("parts", [])
+    raw = "".join(part.get("text", "") for part in parts if part.get("thought") is not True).strip()
+    fence = re.fullmatch(r"```(?:json)?[ \t]*\r?\n(?P<body>[\s\S]*?)\r?\n```", raw, re.I)
+    if fence:
+        raw = fence.group("body")
     try:
-        result = json.loads("".join(part.get("text", "") for part in parts))
+        result = json.loads(raw)
     except (ValueError, TypeError) as exc:
-        raise ResearchError("Gemini returned invalid JSON") from exc
+        raise ModelOutputInvalid("invalid JSON") from exc
     if not isinstance(result, dict):
-        raise ResearchError("Gemini returned a non-object")
+        raise ModelOutputInvalid("non-object JSON")
     return result
 
 
@@ -283,7 +295,7 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
             cause = f"; last {last['model']} {last['detail']}" if last and last["status"] != "success" else ""
             raise ResearchError("Gemini generation budget cannot cover separate review" + cause)
         try:
-            result = _gemini_json(session, key, model, prompt, budget, temperature)
+            result = _gemini_json(session, key, model, prompt, budget, temperature, role)
             attempts.append({"model": model, "status": "success", "detail": role})
             return result, model
         except ModelUnavailable:
@@ -302,6 +314,9 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
             if not delayed[0]:
                 time.sleep(2)
                 delayed[0] = True
+        except ModelOutputInvalid as exc:
+            attempts.append({"model": model, "status": "invalid_output", "detail": f"{role}: {exc}"})
+            temporary.add(model)
         except ResearchError as exc:
             attempts.append({"model": model, "status": "generation_error", "detail": f"{role}: {_safe_error(exc)}"})
             raise
@@ -319,7 +334,7 @@ def _writer_prompt(url: str, title: str, passages: tuple[str, ...]) -> str:
     citations = "\n".join(f"[{index}] {json.dumps(passage, ensure_ascii=False)}"
                           for index, passage in enumerate(passages, 1))
     return f"""Create ONE original evergreen English YouTube Short about the documented scam pattern in this FTC article.
-Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote_id. Set evidence_quote_id to an INTEGER from the numbered source passages below. Do not write evidence_quote text; the server copies the selected passage verbatim. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. Description includes the source URL and says FTC-documented pattern.
+Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote_id. Set evidence_quote_id to an INTEGER from the numbered source passages below. Do not write evidence_quote text; the server copies the selected passage verbatim. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Keep each narration to about 13–16 words instead of long paragraphs. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. Description includes the source URL and says FTC-documented pattern.
 
 The first scene must open with a concrete, spoken hook about the dangerous turn. Set hook to that exact opening text, and begin scenes[0].narration with hook verbatim. Do not use a generic warning as the hook. For EVERY scene, select ONE numbered passage that supports ALL factual clauses in its narration, heading, visual implication, and EVERY item. If one passage cannot support all the scene's claims, remove or simplify those claims. Never infer logos, spoofed websites, screenshots, technical methods, real victims, losses, outcomes, message wording, or adjectives like sophisticated unless the selected passage states them. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in the selected passage.
 

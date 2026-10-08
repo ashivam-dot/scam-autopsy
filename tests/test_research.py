@@ -310,7 +310,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_listed_404_model_falls_back_and_is_excluded_for_seven_days(self):
         used_models = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             used_models.append(model)
             if model == "gemini-3.7-flash":
@@ -341,7 +341,7 @@ class ResearchRunTests(unittest.TestCase):
             "gemini-3.7-flash": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()}}))
         models = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             models.append(model)
             return script(URL) if "Create ONE" in prompt else review()
@@ -364,7 +364,7 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(budget[0], 1)
 
     def test_no_distinct_working_models_fails_closed_without_output(self):
-        def unavailable(_session, _key, _model, _prompt, budget, _temperature):
+        def unavailable(_session, _key, _model, _prompt, budget, _temperature, _role):
             budget[0] += 1
             raise research.ModelUnavailable("listed but unavailable")
 
@@ -383,7 +383,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_503_writer_falls_back_once_without_persistent_exclusion(self):
         used_models = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             used_models.append(model)
             if model == "gemini-3.7-flash":
@@ -411,7 +411,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_total_transient_outage_records_sanitized_attempts_and_last_cause(self):
         statuses = iter((429, 503, 502))
 
-        def unavailable(_session, _key, _model, _prompt, budget, _temperature):
+        def unavailable(_session, _key, _model, _prompt, budget, _temperature, _role):
             budget[0] += 1
             raise research.ModelTransient(next(statuses))
 
@@ -452,7 +452,7 @@ class ResearchRunTests(unittest.TestCase):
         }))
         chosen = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             chosen.append(model)
             return script(URL) if "Create ONE" in prompt else review()
@@ -464,14 +464,14 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate):
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(chosen, ["gemini-3.5-flash-lite", "gemini-3.5-flash"])
+        self.assertEqual(chosen, ["gemini-3.5-flash-lite", "gemma-4-31b-it"])
         state = json.loads(self.state.read_text())
         self.assertEqual(state["model_order"][:3],
                          ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])
         self.assertEqual(state["generation_calls"], 2)
         created = json.loads(paths[0].read_text())
         self.assertEqual(created["review"]["writer"], "gemini-3.5-flash-lite")
-        self.assertEqual(created["review"]["reviewer"], "gemini-3.5-flash")
+        self.assertEqual(created["review"]["reviewer"], "gemma-4-31b-it")
 
     def test_recent_lite_503_uses_other_lite_writer_and_full_reviewer(self):
         from datetime import datetime, timezone
@@ -487,7 +487,7 @@ class ResearchRunTests(unittest.TestCase):
         }))
         chosen = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             chosen.append(model)
             return script(URL) if "Create ONE" in prompt else review()
@@ -499,11 +499,11 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate):
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(chosen, ["gemini-3.1-flash-lite", "gemini-3.5-flash"])
+        self.assertEqual(chosen, ["gemini-3.1-flash-lite", "gemma-4-31b-it"])
         state = json.loads(self.state.read_text())
         self.assertEqual(state["writer_order"][:2],
                          ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"])
-        self.assertEqual(state["reviewer_order"][0], "gemini-3.5-flash")
+        self.assertEqual(state["reviewer_order"][0], "gemma-4-31b-it")
         self.assertEqual(state["generation_calls"], 2)
 
     def test_lite_only_models_cannot_approve_without_full_flash_reviewer(self):
@@ -518,7 +518,7 @@ class ResearchRunTests(unittest.TestCase):
         models = ("gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.1-flash-lite")
         called = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             called.append(model)
             if "Create ONE" in prompt:
@@ -534,6 +534,63 @@ class ResearchRunTests(unittest.TestCase):
             self.assertEqual(self.run_it(limit=1), [])
         self.assertEqual(called, ["gemini-3.5-flash-lite", "gemini-3.5-flash"])
         self.assertEqual(json.loads(self.state.read_text())["generation_calls"], 2)
+
+    def test_gemma_reviewer_falls_back_within_four_call_budget(self):
+        models = ("gemini-3.5-flash-lite", "gemma-4-31b-it", "gemini-3.5-flash",
+                  "gemma-4-26b-a4b-it")
+        called = []
+
+        def generate(_session, _key, model, _prompt, budget, _temperature, role):
+            budget[0] += 1
+            called.append((model, role))
+            if role == "writer":
+                return script(URL)
+            if model in ("gemma-4-31b-it", "gemini-3.5-flash"):
+                raise research.ModelTransient(503)
+            return review()
+
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate), \
+             patch.object(research.time, "sleep") as sleep:
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(called, [("gemini-3.5-flash-lite", "writer"),
+                                  ("gemma-4-31b-it", "reviewer"),
+                                  ("gemini-3.5-flash", "reviewer"),
+                                  ("gemma-4-26b-a4b-it", "reviewer")])
+        self.assertEqual(json.loads(self.state.read_text())["generation_calls"], 4)
+        self.assertEqual(json.loads(paths[0].read_text())["review"]["reviewer"],
+                         "gemma-4-26b-a4b-it")
+        sleep.assert_called_once_with(2)
+
+    def test_gemma_invalid_json_falls_back_without_persisting_raw_response(self):
+        models = ("gemini-3.5-flash-lite", "gemma-4-31b-it", "gemini-3.5-flash")
+
+        def generate(_session, _key, model, _prompt, budget, _temperature, role):
+            budget[0] += 1
+            if role == "writer":
+                return script(URL)
+            if model == "gemma-4-31b-it":
+                raise research.ModelOutputInvalid("invalid JSON")
+            return review()
+
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["generation_calls"], 3)
+        self.assertEqual(state["generation_attempts"][1],
+                         {"model": "gemma-4-31b-it", "status": "invalid_output",
+                          "detail": "reviewer: invalid JSON"})
+        self.assertEqual(json.loads(paths[0].read_text())["review"]["reviewer"],
+                         "gemini-3.5-flash")
 
     def test_failed_conditions_preserved_review_rejects_script(self):
         weak_review = {**review(), "conditions_preserved": False,
@@ -586,7 +643,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_read_timeout_falls_back_within_global_call_budget(self):
         used_models = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             used_models.append(model)
             if model == "gemini-3.7-flash":
@@ -608,7 +665,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_approved_first_script_survives_later_503_and_budget_limit(self):
         calls = []
 
-        def generate(_session, _key, model, prompt, budget, _temperature):
+        def generate(_session, _key, model, prompt, budget, _temperature, _role):
             budget[0] += 1
             calls.append(model)
             if len(calls) == 3:
@@ -673,6 +730,42 @@ class ResearchRunTests(unittest.TestCase):
             config = session.post.call_args.kwargs["json"]["generationConfig"]
             self.assertEqual(config["responseMimeType"], "application/json")
             self.assertNotIn("thinkingConfig", config)
+
+    def test_gemma_uses_documented_thinking_levels_without_json_mime(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"candidates": [{"finishReason": "STOP", "content": {
+            "parts": [{"thought": True, "text": "Internal reasoning is not JSON."},
+                      {"text": '```json\n{"approved": true}\n```'}]}}]}
+        session = Mock()
+        session.post.return_value = response
+        for model, role, level in (("gemma-4-31b-it", "reviewer", "high"),
+                                   ("gemma-4-26b-a4b-it", "writer", "minimal")):
+            with self.subTest(model=model, role=role):
+                self.assertEqual(research._gemini_json(session, "test-key", model, "test",
+                                                        [0], 0.1, role), {"approved": True})
+                config = session.post.call_args.kwargs["json"]["generationConfig"]
+                self.assertEqual(config["thinkingConfig"], {"thinkingLevel": level})
+                self.assertNotIn("responseMimeType", config)
+
+    def test_gemma_json_parser_rejects_prose_around_fenced_object(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"candidates": [{"finishReason": "STOP", "content": {
+            "parts": [{"text": 'Here is the result:\n```json\n{"approved": true}\n```'}]}}]}
+        session = Mock()
+        session.post.return_value = response
+        with self.assertRaisesRegex(research.ResearchError, "invalid JSON"):
+            research._gemini_json(session, "test-key", "gemma-4-31b-it", "test", [0], 0.1,
+                                  "reviewer")
+
+    def test_gemma_catalog_ids_require_live_generate_content_listing(self):
+        session = Mock()
+        session.get.return_value.json.return_value = {"models": [
+            {"name": "models/gemma-4-31b-it", "supportedGenerationMethods": ["generateContent"]},
+            {"name": "models/gemma-4-26b-a4b-it", "supportedGenerationMethods": ["generateContent"]},
+            {"name": "models/gemini-3.5-flash-lite", "supportedGenerationMethods": ["embedContent"]},
+        ]}
+        self.assertEqual(research._model_names(session, "test-key"),
+                         ("gemma-4-31b-it", "gemma-4-26b-a4b-it"))
 
     def test_only_configured_supported_models_can_be_selected(self):
         session = Mock()
