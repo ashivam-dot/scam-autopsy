@@ -30,6 +30,8 @@ GENERATION_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model
 # Each model is listed with free input/output on Google's Gemini API pricing page.
 FREE_TIER_CANDIDATES = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
                         "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash")
+REVIEWER_PREFERENCE = ("gemini-3.5-flash", "gemini-3.7-flash", "gemini-3.6-flash",
+                       "gemini-3.8-flash")
 MAX_GENERATION_CALLS = 4
 MAX_ARTICLE_FETCHES = 10
 MAX_BYTES = 1_000_000
@@ -224,13 +226,15 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
                         unavailable: dict[str, str], prompt: str, budget: list[int],
                         temperature: float, temporary: set[str], delayed: list[bool],
                         attempts: list[dict[str, str]], role: str,
-                        *, exclude: str = "", reserve_calls: int = 0
+                        *, exclude: str = "", reserve_calls: int = 0,
+                        reviewer_pool: tuple[str, ...] = ()
                         ) -> tuple[dict[str, Any], str]:
     for model in models:
         if model == exclude or model in unavailable or model in temporary:
             continue
+        possible_reviewers = reviewer_pool or models
         if reserve_calls and not any(other != model and other not in unavailable and
-                                     other not in temporary for other in models):
+                                     other not in temporary for other in possible_reviewers):
             last = attempts[-1] if attempts else None
             cause = f"; last {last['model']} {last['detail']}" if last and last["status"] != "success" else ""
             raise ResearchError("no distinct Gemini reviewer model remains" + cause)
@@ -273,7 +277,11 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
 
 def _writer_prompt(url: str, title: str, source: str) -> str:
     return f"""Create ONE original evergreen English YouTube Short about the documented scam pattern in this FTC article.
-Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. No invented victims, names, losses, screenshots, outcomes, or quoted messages. Label every fictional UI or reenactment Illustration; label a factual source card SOURCE: FTC. Every scene's evidence_quote must be a short EXACT contiguous passage from the visible FTC article below supporting that scene's factual claims. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in that scene's evidence_quote. Avoid time-sensitive advice and unverifiable superlatives. Description includes the source URL and says FTC-documented pattern.
+Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. Description includes the source URL and says FTC-documented pattern.
+
+The first scene must open with a concrete, spoken hook about the dangerous turn. Set hook to that exact opening text, and begin scenes[0].narration with hook verbatim. Do not use a generic warning as the hook. For EVERY scene, its evidence_quote must be a short EXACT contiguous passage from the visible FTC article that supports ALL factual clauses in its narration, heading, visual implication, and EVERY item. If one quote cannot support all the scene's claims, remove or simplify those claims. Never infer logos, spoofed websites, screenshots, technical methods, real victims, losses, outcomes, message wording, or adjectives like sophisticated unless the quoted passage states them. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in that scene's quote.
+
+Preserve the source's exact scope and conditions. If the article says scammers stop answering OR give excuses, do not say they always cut off contact. If advice warns against a seller who says you can ONLY pay by wire, gift card, crypto, or payment app, do not turn it into a blanket ban on wires. Preserve "may," "typically," "usually," and all stated alternatives. Give advice only when the quote supports it. Label every fictional phone, profile, payment screen, invoice, or reenactment Illustration. Use SOURCE: FTC only for an explicit FTC source card showing sourced wording, never for a recreated interface or payment card. Avoid time-sensitive advice and unverifiable superlatives.
 
 FTC article title: {title}
 FTC source URL: {url}
@@ -282,7 +290,9 @@ Visible FTC article text:
 
 
 def _reviewer_prompt(case: dict[str, Any], url: str, source: str) -> str:
-    return f"""Independently audit this proposed YouTube Short against the primary FTC article below. Return JSON only with boolean fields factual_fidelity, practical_advice, quality, diversity, no_invented_incidents, and a short notes string. Set each false unless fully supported. Check EVERY factual claim in the hook, title, description, narration, headings and on-screen items against the source. Reject false certainty, unsourced numbers (including quantities written as words), unsafe or vague advice, invented real victims/losses/screenshots/quotes, seasonal framing, and repeated or generic scenes. Evidence quotes must truly support corresponding scenes. Fictional UI must be visibly labeled Illustration. Review editorial quality and useful mechanism explanation.
+    return f"""Independently audit this proposed YouTube Short against the primary FTC article below. Return JSON only with boolean fields factual_fidelity, practical_advice, quality, diversity, no_invented_incidents, scene_evidence_complete, conditions_preserved, visual_disclosure, and a short notes string. Set each boolean false unless fully supported. Check EVERY claim in the hook, title, description, every scene narration and heading, every visual implication, and EVERY on-screen item. For scene_evidence_complete, compare EACH scene's own exact evidence_quote with ALL claims in that scene; one unsupported clause or item makes it false. Check the source itself too. Unsupported details such as hijacked logos, spoofed websites, or a special technical method make factual_fidelity and scene_evidence_complete false even if the article describes ordinary impersonation. Unsupported evaluative adjectives like sophisticated also fail factual_fidelity.
+
+For conditions_preserved, reject changed scope, certainty, or alternatives: "stops answering OR makes an excuse" cannot become "always cuts off contact"; "never pay anyone who says you can ONLY pay by wire, gift card, crypto, or payment app" cannot become a blanket "no wires" rule. Preserve may, typically, usually, and only. For visual_disclosure, reject SOURCE: FTC on any recreated phone, profile, invoice, payment card or other fictional interface; such visuals need Illustration. SOURCE: FTC is for an explicit factual FTC source card only. Verify the first scene actually speaks the concrete hook verbatim. Reject unsafe or vague advice, invented real victims/losses/screenshots/quotes, unsourced numbers including words, seasonal framing, and generic or repeated scenes. A single failure must set its relevant field false. Do not rubber-stamp; notes should identify a specific checked passage or the first rejection.
 
 Article URL: {url}
 Visible article text:
@@ -327,6 +337,10 @@ def validate_script(case: dict[str, Any], url: str, source: str) -> dict[str, An
             _text_field(scene.get(key), f"scene {index} {key}")
         if scene["label"] not in ("Illustration", "SOURCE: FTC"):
             raise ResearchError("scene label invalid")
+        if (scene["label"] != "Illustration" and
+                re.search(r"\b(phone|profile|payment|invoice|account|message|sms|chat|text)\b",
+                          scene["visual"], re.I)):
+            raise ResearchError("fictional UI visual requires Illustration label")
         if len(scene["heading"]) > 42:
             raise ResearchError("scene heading too long")
         items = scene.get("items")
@@ -340,6 +354,8 @@ def validate_script(case: dict[str, Any], url: str, source: str) -> dict[str, An
         if not _numbers(display).issubset(_numbers(quote)):
             raise ResearchError("scene numeric claim lacks matching evidence quote")
         narration.append(scene["narration"])
+    if not scenes[0]["narration"].startswith(case["hook"]):
+        raise ResearchError("first scene must speak hook verbatim")
     if (len({scene["heading"] for scene in scenes}) != 7 or
             len({scene["narration"] for scene in scenes}) != 7 or
             len({scene["visual"] for scene in scenes}) < 3):
@@ -422,9 +438,15 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             raise ResearchError("GEMINI_API_KEY is unavailable")
         used_urls, used_hashes, used_ids = _existing(content_dir, state)
         models = _deprioritize_recent_transients(_model_names(session, key), prior_state, checked)
+        reviewer_models = tuple(model for model in REVIEWER_PREFERENCE if model in models)
+        writer_models = tuple(model for model in models if "flash-lite" in model) + tuple(
+            model for model in models if "flash-lite" not in model)
         state["model_order"] = list(models)
-        if len([model for model in models if model not in unavailable]) < 2:
-            raise ResearchError("two configured free-tier Gemini models are unavailable")
+        state["writer_order"] = list(writer_models)
+        state["reviewer_order"] = list(reviewer_models)
+        if (len([model for model in models if model not in unavailable]) < 2 or
+                not any(model not in unavailable for model in reviewer_models)):
+            raise ResearchError("distinct free-tier Gemini writer and non-Lite reviewer are unavailable")
         pending: list[tuple[Path, dict[str, Any], str, str]] = []
         rejected: list[dict[str, str]] = []
         stopped_reason = ""
@@ -450,8 +472,9 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                 continue
             try:
                 candidate, writer_model = _generate_available(
-                    session, key, models, unavailable, _writer_prompt(url, title, source), budget, 0.6,
-                    temporary_unavailable, delayed, attempts, "writer", reserve_calls=1)
+                    session, key, writer_models, unavailable, _writer_prompt(url, title, source), budget, 0.6,
+                    temporary_unavailable, delayed, attempts, "writer", reserve_calls=1,
+                    reviewer_pool=reviewer_models)
             except (ResearchError, requests.RequestException) as exc:
                 stopped_reason = _safe_error(exc)
                 break
@@ -468,12 +491,14 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                                    for scene in candidate["scenes"]]
             try:
                 review, reviewer_model = _generate_available(
-                    session, key, models, unavailable, _reviewer_prompt(candidate, url, source), budget, 0.1,
+                    session, key, reviewer_models, unavailable, _reviewer_prompt(candidate, url, source), budget, 0.1,
                     temporary_unavailable, delayed, attempts, "reviewer", exclude=writer_model)
             except (ResearchError, requests.RequestException) as exc:
                 stopped_reason = _safe_error(exc)
                 break
-            gates = ("factual_fidelity", "practical_advice", "quality", "diversity", "no_invented_incidents")
+            gates = ("factual_fidelity", "practical_advice", "quality", "diversity",
+                     "no_invented_incidents", "scene_evidence_complete", "conditions_preserved",
+                     "visual_disclosure")
             failed_gates = [gate for gate in gates if review.get(gate) is not True]
             if failed_gates:
                 rejected.append({"source_url": url, "reason": "reviewer rejected: " + ", ".join(failed_gates)})

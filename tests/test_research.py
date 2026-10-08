@@ -18,6 +18,8 @@ QUOTE = "Scammers send an invoice and ask for a wire transfer before the equipme
 SOURCE = ("The FTC describes fake farm equipment listings. " + QUOTE + " "
           "Search for the business independently and call a number you find yourself. " * 5)
 NARRATION = "A fake equipment listing can look convincing, so check the seller independently before sending money by wire."
+FULL_MODELS = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
+               "gemini-3.8-flash")
 
 
 def script(url: str = URL) -> dict:
@@ -26,7 +28,7 @@ def script(url: str = URL) -> dict:
     adjectives = ("fake", "phony", "bogus", "deceptive", "fraudulent", "invented", "false")
     visuals = ("phone", "profile", "payment", "flow", "warning", "receipt", "cards")
     return {
-        "id": "draft", "title": "The fake equipment listing", "hook": "The invoice arrives before the tractor",
+        "id": "draft", "title": "The fake equipment listing", "hook": NARRATION,
         "source_urls": [url], "description": f"FTC-documented pattern. Source: {url}",
         "format": "short", "scenes": [
             {"narration": NARRATION.replace("fake", adjective), "heading": heading, "visual": visual,
@@ -38,7 +40,9 @@ def script(url: str = URL) -> dict:
 
 def review() -> dict:
     return {"factual_fidelity": True, "practical_advice": True, "quality": True,
-            "diversity": True, "no_invented_incidents": True, "notes": "The mechanism and action match the source."}
+            "diversity": True, "no_invented_incidents": True, "scene_evidence_complete": True,
+            "conditions_preserved": True, "visual_disclosure": True,
+            "notes": "The mechanism and action match the source."}
 
 
 class SourceValidationTests(unittest.TestCase):
@@ -85,6 +89,19 @@ class SourceValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(research.ResearchError, "metadata numeric"):
             research.validate_script(metadata, URL, SOURCE)
 
+    def test_fictional_ui_requires_illustration_and_hook_must_be_spoken(self):
+        for visual in ("phone", "profile", "payment", "invoice screen"):
+            with self.subTest(visual=visual):
+                candidate = script()
+                candidate["scenes"][0]["visual"] = visual
+                candidate["scenes"][0]["label"] = "SOURCE: FTC"
+                with self.assertRaisesRegex(research.ResearchError, "fictional UI"):
+                    research.validate_script(candidate, URL, SOURCE)
+        candidate = script()
+        candidate["hook"] = "This generic warning never appears in the narration."
+        with self.assertRaisesRegex(research.ResearchError, "speak hook verbatim"):
+            research.validate_script(candidate, URL, SOURCE)
+
     def test_numeric_support_preserves_currency_scale_and_percent(self):
         self.assertNotEqual(research._numbers("$1 million"), research._numbers("$1"))
         self.assertNotEqual(research._numbers("$1"), research._numbers("£1"))
@@ -111,11 +128,13 @@ class SourceValidationTests(unittest.TestCase):
         for index, scene in enumerate(candidate["scenes"]):
             scene["narration"] = narrations[index]
             scene["evidence_quote"] = advice_quote if index in (4, 6) else QUOTE
+        candidate["hook"] = narrations[0]
         self.assertEqual(len(research.WORD.findall(" ".join(narrations))), 95)
         self.assertEqual(research.validate_script(candidate, URL, SOURCE), candidate)
 
         too_short = copy.deepcopy(candidate)
         too_short["scenes"][0]["narration"] = "A fake listing appears."
+        too_short["hook"] = too_short["scenes"][0]["narration"]
         with self.assertRaisesRegex(research.ResearchError, "outside 90-125"):
             research.validate_script(too_short, URL, SOURCE)
 
@@ -255,7 +274,7 @@ class ResearchRunTests(unittest.TestCase):
                 raise research.ModelUnavailable("listed but generation unavailable")
             return script(URL) if "Create ONE" in prompt else review()
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", return_value=SOURCE), \
@@ -284,7 +303,7 @@ class ResearchRunTests(unittest.TestCase):
             models.append(model)
             return script(URL) if "Create ONE" in prompt else review()
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", return_value=SOURCE), \
@@ -328,7 +347,7 @@ class ResearchRunTests(unittest.TestCase):
                 raise research.ModelTransient(503)
             return script(URL) if "Create ONE" in prompt else review()
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", return_value=SOURCE), \
@@ -353,7 +372,7 @@ class ResearchRunTests(unittest.TestCase):
             budget[0] += 1
             raise research.ModelTransient(next(statuses))
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", return_value=SOURCE), \
@@ -402,11 +421,90 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate):
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(chosen, ["gemini-3.5-flash", "gemini-3.5-flash-lite"])
+        self.assertEqual(chosen, ["gemini-3.5-flash-lite", "gemini-3.5-flash"])
         state = json.loads(self.state.read_text())
         self.assertEqual(state["model_order"][:3],
                          ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])
         self.assertEqual(state["generation_calls"], 2)
+        created = json.loads(paths[0].read_text())
+        self.assertEqual(created["review"]["writer"], "gemini-3.5-flash-lite")
+        self.assertEqual(created["review"]["reviewer"], "gemini-3.5-flash")
+
+    def test_recent_lite_503_uses_other_lite_writer_and_full_reviewer(self):
+        from datetime import datetime, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "generation_attempts": [
+                {"model": "gemini-3.5-flash", "status": "success", "detail": "writer"},
+                {"model": "gemini-3.5-flash-lite", "status": "transient",
+                 "detail": "reviewer: HTTP 503"},
+                {"model": "gemini-3.1-flash-lite", "status": "success", "detail": "reviewer"},
+            ],
+        }))
+        chosen = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            chosen.append(model)
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(chosen, ["gemini-3.1-flash-lite", "gemini-3.5-flash"])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["writer_order"][:2],
+                         ["gemini-3.1-flash-lite", "gemini-3.5-flash-lite"])
+        self.assertEqual(state["reviewer_order"][0], "gemini-3.5-flash")
+        self.assertEqual(state["generation_calls"], 2)
+
+    def test_lite_only_models_cannot_approve_without_full_flash_reviewer(self):
+        models = ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite")
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "_gemini_json") as generate:
+            self.assertEqual(self.run_it(limit=1), [])
+        generate.assert_not_called()
+        self.assertEqual(json.loads(self.state.read_text())["status"], "failed")
+
+    def test_lite_writer_cannot_use_another_lite_after_full_reviewer_outage(self):
+        models = ("gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.1-flash-lite")
+        called = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            called.append(model)
+            if "Create ONE" in prompt:
+                return script(URL)
+            raise research.ModelTransient(503)
+
+        with patch.object(research, "_model_names", return_value=models), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate), \
+             patch.object(research.time, "sleep"):
+            self.assertEqual(self.run_it(limit=1), [])
+        self.assertEqual(called, ["gemini-3.5-flash-lite", "gemini-3.5-flash"])
+        self.assertEqual(json.loads(self.state.read_text())["generation_calls"], 2)
+
+    def test_failed_conditions_preserved_review_rejects_script(self):
+        weak_review = {**review(), "conditions_preserved": False,
+                       "notes": "The source says stops answering or gives an excuse, not always stops."}
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(URL), weak_review]):
+            self.assertEqual(self.run_it(limit=1), [])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["status"], "failed")
+        self.assertIn("conditions_preserved", state["rejected"][0]["reason"])
+        self.assertEqual(list(self.content.glob("*.json")), [])
 
     def test_old_transient_models_return_to_normal_priority(self):
         from datetime import datetime, timedelta, timezone
@@ -427,7 +525,7 @@ class ResearchRunTests(unittest.TestCase):
                 raise research.requests.exceptions.ReadTimeout("generation read timed out")
             return script(URL) if "Create ONE" in prompt else review()
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", return_value=SOURCE), \
@@ -449,7 +547,7 @@ class ResearchRunTests(unittest.TestCase):
                 raise research.ModelTransient(503)
             return script(URL) if "Create ONE" in prompt else review()
 
-        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+        with patch.object(research, "_model_names", return_value=FULL_MODELS), \
              patch.object(research, "discover_articles", return_value=[(URL, "Scam one"), (OTHER_URL, "Scam two")]), \
              patch.object(research, "_get_public", return_value=b"html"), \
              patch.object(research, "extract_article", side_effect=[SOURCE + URL, SOURCE + OTHER_URL]), \
@@ -458,7 +556,7 @@ class ResearchRunTests(unittest.TestCase):
             paths = self.run_it()
         self.assertEqual(len(paths), 1)
         self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [URL])
-        self.assertEqual(calls, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.7-flash"])
+        self.assertEqual(calls, ["gemini-3.7-flash", "gemini-3.5-flash", "gemini-3.7-flash"])
         sleep.assert_called_once_with(2)
         state = json.loads(self.state.read_text())
         self.assertEqual(state["status"], "partial_success")
