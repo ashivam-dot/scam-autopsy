@@ -1,0 +1,62 @@
+{
+  "checked_at": "2026-10-08T19:06:34.326926+00:00",
+  "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
+  "channel_url": "https://www.youtube.com/@ScamAutopsyTV",
+  "implementation_commit": "5460d94",
+  "public_release": {
+    "url": "https://www.youtube.com/watch?v=cgnDylK2Xm8",
+    "cloud_run": "https://github.com/ashivam-dot/scam-autopsy/actions/runs/37819125534",
+    "public_playback_verified": true,
+    "quality": {
+      "duration_seconds": 50.792,
+      "width": 720,
+      "height": 1280,
+      "fps": 24,
+      "integrated_lufs": -16.4
+    }
+  },
+  "legacy_archive": {
+    "unlisted_videos": 8,
+    "unlisted_playlist": "PLXWBjy4BDW3c",
+    "fictional_disclosure": true
+  },
+  "cloud_schedule": {
+    "release": "Tuesday and Saturday 17:30 UTC / 23:00 IST",
+    "insights": "Daily 08:15 UTC / 13:45 IST",
+    "github_hosted_runners": true,
+    "laptop_required_after_setup": false
+  },
+  "tests": {
+    "passed": 100,
+    "subtests_passed": 33
+  },
+  "private_recovery_verified": "https://github.com/ashivam-dot/scam-autopsy/actions/runs/37825573606",
+  "queue": {
+    "reviewed_stock": 7,
+    "ready_queue": 5,
+    "confirmed_public_cases": 1,
+    "private_previews": 2,
+    "active_reservations": 0,
+    "analytics_rows": 4,
+    "eligible_comparisons": 0
+  },
+  "health_status": "needs_attention",
+  "research": {
+    "status": "enabled_but_not_fully_verified_after_final_hardening",
+    "latest_run": "https://github.com/ashivam-dot/scam-autopsy/actions/runs/37828834843",
+    "latest_outcome": "failed",
+    "detail": "Writer passed deterministic checks after service fallback; independent reviewer timed out within the four-call cap. No script was approved.",
+    "retry": "Daily workflow retries while prior research status is failed.",
+    "attention_issue": "https://github.com/ashivam-dot/scam-autopsy/issues/1"
+  },
+  "editorial_audits": [
+    "reports/editorial-audit-2026-10-08.json",
+    "reports/editorial-audit-car-2026-10-08.json"
+  ],
+  "limits": [
+    "No guarantee of subscriber growth, virality or income.",
+    "Automatic long-form production and creative pivots are not implemented.",
+    "Free-service quotas, OAuth revocation and policy changes can interrupt jobs.",
+    "Monetization eligibility, legal identity, tax and payment setup remain owner actions."
+  ]
+}
