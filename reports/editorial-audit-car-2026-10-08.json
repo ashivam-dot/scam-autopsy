@@ -1,0 +1,19 @@
+{
+  "case_id": "ftc-0e5b456e9f78",
+  "audited_at": "2026-10-08T18:57:00.846230+00:00",
+  "reviewer": "direct-primary-source-review",
+  "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
+  "source_sha256": "d7fe75c9dfe7f0fcc0bf6341a865d4c56499bb0754713782fde12b89204f33c4",
+  "cloud_run_id": 37827804475,
+  "original_accepted_commit": "22b6a4f",
+  "decision": "rejected_before_preview_or_publication",
+  "archived_script": "archive/ftc-0e5b456e9f78-rejected-draft.json",
+  "findings": [
+    "Scene 1 Empty lot item is not supported by the FTC warning about no car awaiting that buyer.",
+    "Perfect Clones overstates detailed copying.",
+    "Most narration repeats or closely follows FTC prose.",
+    "Phone messaging and avatar imagery do not explain the documented website and in-person mechanism."
+  ],
+  "original_automated_review_false_positive": true,
+  "next_action": "Retry with original narration and renderer-aware visual evidence requirements."
+}

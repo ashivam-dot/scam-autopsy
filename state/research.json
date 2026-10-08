@@ -2,7 +2,6 @@
   "model_unavailable_until": {},
   "used_source_urls": [
     "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
-    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
     "https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf",
     "https://www.ic3.gov/CrimeInfo/BEC",
     "https://www.ic3.gov/PSA/2023/PSA230929",
@@ -14,8 +13,7 @@
     "https://www.ic3.gov/PSA/2026/PSA260917"
   ],
   "used_source_hashes": [
-    "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93",
-    "d7fe75c9dfe7f0fcc0bf6341a865d4c56499bb0754713782fde12b89204f33c4"
+    "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
   ],
   "model_transient_until": {
     "gemini-3.1-flash-lite": "2026-10-09T00:47:40.898076+00:00",
@@ -50,7 +48,12 @@
       "detail": "reviewer"
     }
   ],
-  "rejected": [],
+  "rejected": [
+    {
+      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
+      "reason": "direct editorial audit: scene 1 unsupported Empty lot; source-reading narration"
+    }
+  ],
   "model_order": [
     "gemini-3.6-flash",
     "gemini-3.5-flash",
@@ -79,8 +82,9 @@
     "gemini-3.8-flash",
     "gemini-3.7-flash"
   ],
-  "status": "partial_success",
-  "generated": 1,
+  "status": "failed",
+  "generated": 0,
   "generation_calls": 4,
-  "stopped_reason": "remaining Gemini calls cannot cover writer and reviewer"
+  "stopped_reason": "remaining Gemini calls cannot cover writer and reviewer",
+  "error": "Direct editorial audit rejected the unreserved car draft"
 }

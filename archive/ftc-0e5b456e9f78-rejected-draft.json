@@ -86,7 +86,7 @@
       "evidence_quote": "consider taking your business somewhere else. Report a scam Walk away if the dealer insists on an upfront payment by wire transfer only . And report them at ReportFraud.ftc.gov ."
     }
   ],
-  "approved": true,
+  "approved": false,
   "review": {
     "reviewer": "gemini-3.6-flash",
     "writer": "gemma-4-26b-a4b-it",
@@ -103,5 +103,10 @@
       "visual_disclosure": true
     },
     "source_sha256": "d7fe75c9dfe7f0fcc0bf6341a865d4c56499bb0754713782fde12b89204f33c4"
+  },
+  "direct_audit": {
+    "checked_at": "2026-10-08T18:57:00.846230+00:00",
+    "decision": "rejected",
+    "reason": "Unsupported empty-lot item; overstatement; narration largely reproduces the source."
   }
 }
