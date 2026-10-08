@@ -284,6 +284,61 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(result["rejected"][0]["source_url"], OTHER_URL)
         self.assertIn("factual_fidelity", result["rejected"][0]["reason"])
 
+    def test_recent_reviewer_rejection_tries_untried_car_topic_before_qr(self):
+        from datetime import datetime, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "rejected": [{"source_url": URL,
+                          "reason": "reviewer rejected: scene 1: factual_fidelity"}],
+        }))
+        fetched = []
+
+        def get_public(_session, url):
+            fetched.append(url)
+            return b"html"
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "QR scam"),
+                                                                         (OTHER_URL, "Car scam")]), \
+             patch.object(research, "_get_public", side_effect=get_public), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(OTHER_URL), review()]):
+            paths = self.run_it(limit=1)
+        self.assertEqual(fetched, [OTHER_URL])
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [OTHER_URL])
+
+    def test_source_rejection_backoff_expires_after_six_hours(self):
+        from datetime import datetime, timedelta, timezone
+        checked = datetime.now(timezone.utc)
+        articles = [(URL, "QR scam"), (OTHER_URL, "Car scam")]
+        prior = {"checked_at": (checked - timedelta(hours=7)).isoformat(),
+                 "rejected": [{"source_url": URL, "reason": "writer validation: scene 1 invalid"}]}
+        self.assertEqual(research._deprioritize_recent_rejections(articles, prior, checked), articles)
+
+    def test_approved_source_dedupes_even_when_recent_rejection_reorders_feed(self):
+        from datetime import datetime, timezone
+        (self.content / "approved.json").write_text(json.dumps({"id": "approved",
+                                                                 "source_urls": [OTHER_URL]}))
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "rejected": [{"source_url": URL,
+                          "reason": "writer validation: scene 1 evidence quote absent from article"}],
+        }))
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "QR scam"),
+                                                                         (OTHER_URL, "Car scam")]), \
+             patch.object(research, "_get_public", return_value=b"html") as fetch, \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(URL), review()]):
+            paths = self.run_it(limit=1)
+        self.assertEqual(fetch.call_count, 1)
+        self.assertEqual(fetch.call_args.args[1], URL)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [URL])
+
     def test_writer_rejection_tries_next_source_with_remaining_budget(self):
         first = script(URL)
         first["scenes"][0]["evidence_quote"] = "invented quote"

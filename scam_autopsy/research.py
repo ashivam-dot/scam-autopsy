@@ -234,6 +234,26 @@ def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[s
         model for model in models if model in cooling)
 
 
+def _deprioritize_recent_rejections(articles: list[tuple[str, str]], prior_state: dict[str, Any],
+                                    checked: datetime) -> list[tuple[str, str]]:
+    """Try fresh topics first after a recent writer or reviewer rejection."""
+    try:
+        previous = datetime.fromisoformat(prior_state.get("checked_at", ""))
+        if previous.tzinfo is None or not timedelta(0) <= checked - previous <= timedelta(hours=6):
+            return articles
+    except (TypeError, ValueError):
+        return articles
+    rejected = prior_state.get("rejected", [])
+    if not isinstance(rejected, list):
+        return articles
+    cooling = {item.get("source_url") for item in rejected if isinstance(item, dict) and
+               isinstance(item.get("source_url"), str) and
+               isinstance(item.get("reason"), str) and
+               item["reason"].startswith(("writer validation:", "reviewer rejected:"))}
+    return [article for article in articles if article[0] not in cooling] + [
+        article for article in articles if article[0] in cooling]
+
+
 def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
                  budget: list[int], temperature: float, role: str = "writer") -> dict[str, Any]:
     if model not in FREE_TIER_CANDIDATES:
@@ -513,7 +533,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
         temporary_unavailable: set[str] = set()
         delayed = [False]
         fetched = 0
-        for url, title in discover_articles(session):
+        articles = _deprioritize_recent_rejections(discover_articles(session), prior_state, checked)
+        for url, title in articles:
             if len(pending) >= limit or fetched >= MAX_ARTICLE_FETCHES:
                 break
             if url in used_urls:
