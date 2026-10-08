@@ -15,8 +15,13 @@
   "used_source_hashes": [
     "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
   ],
-  "checked_at": "2026-10-08T18:26:57.116306+00:00",
+  "checked_at": "2026-10-08T18:31:59.306296+00:00",
   "generation_attempts": [
+    {
+      "model": "gemini-3.5-flash-lite",
+      "status": "transient",
+      "detail": "writer: HTTP 503"
+    },
     {
       "model": "gemini-3.1-flash-lite",
       "status": "success",
@@ -26,19 +31,24 @@
       "model": "gemini-3.1-flash-lite",
       "status": "success",
       "detail": "writer"
+    },
+    {
+      "model": "gemini-3.5-flash",
+      "status": "transient",
+      "detail": "reviewer: HTTP 503"
     }
   ],
   "model_order": [
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
-    "gemini-3.8-flash",
-    "gemini-3.5-flash-lite"
+    "gemini-3.8-flash"
   ],
   "writer_order": [
-    "gemini-3.1-flash-lite",
     "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
@@ -51,16 +61,12 @@
     "gemini-3.8-flash"
   ],
   "status": "failed",
-  "generation_calls": 2,
+  "generation_calls": 4,
   "rejected": [
     {
       "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet",
-      "reason": "writer validation: evidence quote absent from article"
-    },
-    {
-      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
-      "reason": "writer validation: evidence quote absent from article"
+      "reason": "writer validation: narration word count 152 outside 90-125"
     }
   ],
-  "error": "no candidate passed review"
+  "error": "Gemini generation budget cannot cover separate review; last gemini-3.5-flash reviewer: HTTP 503"
 }
