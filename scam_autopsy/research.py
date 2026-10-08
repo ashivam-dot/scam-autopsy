@@ -66,7 +66,7 @@ class ModelTransient(ResearchError):
     """A model returned a bounded retryable service or quota status."""
 
     def __init__(self, status_code: int | None = None):
-        self.status_code = status_code if status_code in (429, 502, 503, 504) else None
+        self.status_code = status_code if status_code in (429, 500, 502, 503, 504) else None
         super().__init__("Gemini temporarily unavailable")
 
 
@@ -253,7 +253,7 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
                             json=payload, timeout=GENERATION_TIMEOUT)
     if response.status_code == 404:
         raise ModelUnavailable("Gemini listed model unavailable for generation")
-    if response.status_code in (429, 502, 503, 504):
+    if response.status_code in (429, 500, 502, 503, 504):
         raise ModelTransient(response.status_code)
     response.raise_for_status()
     data = response.json()
@@ -315,7 +315,10 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
                 time.sleep(2)
                 delayed[0] = True
         except ModelOutputInvalid as exc:
-            attempts.append({"model": model, "status": "invalid_output", "detail": f"{role}: {exc}"})
+            reason = str(exc)
+            if reason not in ("invalid JSON", "non-object JSON", "generation blocked or incomplete"):
+                reason = "invalid model output"
+            attempts.append({"model": model, "status": "invalid_output", "detail": f"{role}: {reason}"})
             temporary.add(model)
         except ResearchError as exc:
             attempts.append({"model": model, "status": "generation_error", "detail": f"{role}: {_safe_error(exc)}"})

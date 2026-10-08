@@ -574,7 +574,7 @@ class ResearchRunTests(unittest.TestCase):
             if role == "writer":
                 return script(URL)
             if model == "gemma-4-31b-it":
-                raise research.ModelOutputInvalid("invalid JSON")
+                raise research.ModelOutputInvalid("invalid JSON API_KEY_UNSAFE")
             return review()
 
         with patch.object(research, "_model_names", return_value=models), \
@@ -588,7 +588,8 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["generation_calls"], 3)
         self.assertEqual(state["generation_attempts"][1],
                          {"model": "gemma-4-31b-it", "status": "invalid_output",
-                          "detail": "reviewer: invalid JSON"})
+                          "detail": "reviewer: invalid model output"})
+        self.assertNotIn("API_KEY_UNSAFE", json.dumps(state))
         self.assertEqual(json.loads(paths[0].read_text())["review"]["reviewer"],
                          "gemini-3.5-flash")
 
@@ -688,7 +689,7 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["generation_calls"], 3)
 
     def test_retryable_status_codes_are_bounded_transients(self):
-        for status in (429, 502, 503, 504):
+        for status in (429, 500, 502, 503, 504):
             with self.subTest(status=status):
                 session = Mock()
                 session.post.return_value = Mock(status_code=status)
