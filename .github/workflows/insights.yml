@@ -53,6 +53,7 @@ jobs:
             git push origin HEAD:main
           fi
       - name: Verify queue and cloud receipts
+        if: always()
         run: python -m scam_autopsy.health
       - name: Save health receipt
         if: always()

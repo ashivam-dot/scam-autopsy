@@ -217,6 +217,79 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["status"], "partial_success")
         self.assertIn("writer validation", state["rejected"][0]["reason"])
 
+    def test_listed_404_model_falls_back_and_is_excluded_for_seven_days(self):
+        used_models = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            used_models.append(model)
+            if model == "gemini-3.8-flash":
+                raise research.ModelUnavailable("listed but generation unavailable")
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(used_models, ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"])
+        created = json.loads(paths[0].read_text())
+        self.assertEqual(created["review"]["writer"], "gemini-3.7-flash")
+        self.assertEqual(created["review"]["reviewer"], "gemini-3.6-flash")
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["generation_calls"], 3)
+        from datetime import datetime, timezone
+        until = datetime.fromisoformat(state["model_unavailable_until"]["gemini-3.8-flash"])
+        self.assertGreater(until, datetime.now(timezone.utc))
+
+    def test_persisted_404_exclusion_skips_bad_model_next_run(self):
+        from datetime import datetime, timedelta, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({"model_unavailable_until": {
+            "gemini-3.8-flash": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()}}))
+        models = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            models.append(model)
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            self.assertEqual(len(self.run_it(limit=1)), 1)
+        self.assertEqual(models, ["gemini-3.7-flash", "gemini-3.6-flash"])
+
+    def test_404_response_is_not_retried_on_same_model(self):
+        session = Mock()
+        session.post.return_value = Mock(status_code=404)
+        budget = [0]
+        with self.assertRaises(research.ModelUnavailable):
+            research._gemini_json(session, "test-key", "gemini-3.8-flash", "test", budget, 0.6)
+        self.assertEqual(session.post.call_count, 1)
+        self.assertEqual(budget[0], 1)
+
+    def test_no_distinct_working_models_fails_closed_without_output(self):
+        def unavailable(_session, _key, _model, _prompt, budget, _temperature):
+            budget[0] += 1
+            raise research.ModelUnavailable("listed but unavailable")
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=unavailable) as model:
+            self.assertEqual(self.run_it(limit=1), [])
+        self.assertEqual(model.call_count, 3)
+        self.assertEqual(list(self.content.glob("*.json")), [])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["status"], "failed")
+        self.assertEqual(state["generation_calls"], 3)
+
     def test_429_retries_once_with_bounded_budget(self):
         response = Mock(status_code=429)
         session = Mock()
@@ -224,25 +297,25 @@ class ResearchRunTests(unittest.TestCase):
         budget = [0]
         with patch.object(research.time, "sleep") as sleep:
             with self.assertRaisesRegex(research.ResearchError, "quota exhausted"):
-                research._gemini_json(session, "test-key", "gemini-2.5-flash", "test", budget, 0.1)
+                research._gemini_json(session, "test-key", "gemini-3.8-flash", "test", budget, 0.1)
         self.assertEqual(session.post.call_count, 2)
         self.assertEqual(budget[0], 2)
         sleep.assert_called_once_with(2)
 
-    def test_flash_writer_disables_thinking_for_token_budget(self):
+    def test_current_flash_uses_documented_low_thinking_level(self):
         response = Mock(status_code=200)
         response.json.return_value = {"candidates": [{"finishReason": "STOP",
                                                       "content": {"parts": [{"text": "{}"}]}}]}
         session = Mock()
         session.post.return_value = response
-        research._gemini_json(session, "test-key", "gemini-2.5-flash", "test", [0], 0.6)
+        research._gemini_json(session, "test-key", "gemini-3.8-flash", "test", [0], 0.6)
         self.assertEqual(session.post.call_args.kwargs["json"]["generationConfig"]["thinkingConfig"],
-                         {"thinkingBudget": 0})
+                         {"thinkingLevel": "low"})
 
     def test_only_configured_supported_models_can_be_selected(self):
         session = Mock()
         session.get.return_value.json.return_value = {"models": [
-            {"name": "models/gemini-2.5-flash", "supportedGenerationMethods": ["generateContent"]},
+            {"name": "models/gemini-3.8-flash", "supportedGenerationMethods": ["generateContent"]},
             {"name": "models/gemini-paid-only", "supportedGenerationMethods": ["generateContent"]},
         ]}
         with self.assertRaisesRegex(research.ResearchError, "unavailable"):

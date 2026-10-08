@@ -14,7 +14,7 @@ import re
 import tempfile
 import time
 import xml.etree.ElementTree as ET
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlsplit
@@ -27,11 +27,12 @@ ROOT = Path(__file__).resolve().parents[1]
 FEED_URL = "https://consumer.ftc.gov/blog/rss"
 MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GENERATION_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
-FREE_TIER_CANDIDATES = ("gemini-2.5-flash", "gemini-2.5-flash-lite")
+# Each model is listed with free input/output on Google's Gemini API pricing page.
+FREE_TIER_CANDIDATES = ("gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash")
 MAX_GENERATION_CALLS = 4
 MAX_ARTICLE_FETCHES = 10
 MAX_BYTES = 1_000_000
-TIMEOUT = (5, 25)
+TIMEOUT = (5, 45)
 USER_AGENT = "Mozilla/5.0 (compatible; ScamAutopsyResearch/1.0; +https://consumer.ftc.gov/)"
 ALLOWED_HOSTS = {"consumer.ftc.gov", "www.ftc.gov", "www.fbi.gov", "www.ic3.gov", "www.cisa.gov"}
 ARTICLE_PATH = re.compile(r"/consumer-alerts/20\d{2}/\d{2}/[a-z0-9-]+/?\Z")
@@ -46,6 +47,10 @@ SEASONAL_TOPIC = re.compile(r"open enrollment|national .* month|holiday|deadline
 
 class ResearchError(RuntimeError):
     pass
+
+
+class ModelUnavailable(ResearchError):
+    """A listed model returned 404 from generateContent."""
 
 
 def canonical_source_url(url: str) -> str:
@@ -132,7 +137,7 @@ def extract_article(html: bytes) -> str:
     return text
 
 
-def _model_names(session: requests.Session, key: str) -> tuple[str, str]:
+def _model_names(session: requests.Session, key: str) -> tuple[str, ...]:
     response = session.get(MODELS_URL, headers={"x-goog-api-key": key}, timeout=TIMEOUT,
                            params={"pageSize": 1000})
     response.raise_for_status()
@@ -144,7 +149,7 @@ def _model_names(session: requests.Session, key: str) -> tuple[str, str]:
     chosen = [name for name in FREE_TIER_CANDIDATES if name in supported]
     if len(chosen) < 2:
         raise ResearchError("two configured free-tier Gemini models are unavailable")
-    return chosen[0], chosen[1]
+    return tuple(chosen)
 
 
 def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
@@ -153,15 +158,16 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
         raise ResearchError("unconfigured Gemini model")
     payload = {"contents": [{"parts": [{"text": prompt}]}],
                "generationConfig": {"responseMimeType": "application/json", "temperature": temperature,
-                                    "maxOutputTokens": 3500}}
-    if model == "gemini-2.5-flash":
-        payload["generationConfig"]["thinkingConfig"] = {"thinkingBudget": 0}
+                                    "maxOutputTokens": 6000,
+                                    "thinkingConfig": {"thinkingLevel": "low"}}}
     for attempt in range(2):
         if budget[0] >= MAX_GENERATION_CALLS:
             raise ResearchError("Gemini generation budget exhausted")
         budget[0] += 1
         response = session.post(GENERATION_URL.format(model=model), headers={"x-goog-api-key": key},
                                 json=payload, timeout=TIMEOUT)
+        if response.status_code == 404:
+            raise ModelUnavailable("Gemini listed model unavailable for generation")
         if response.status_code == 429:
             if attempt == 0:
                 time.sleep(2)
@@ -181,6 +187,24 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
             raise ResearchError("Gemini returned a non-object")
         return result
     raise ResearchError("Gemini free-tier quota exhausted")
+
+
+def _generate_available(session: requests.Session, key: str, models: tuple[str, ...],
+                        unavailable: dict[str, str], prompt: str, budget: list[int],
+                        temperature: float, *, exclude: str = "", reserve_calls: int = 0
+                        ) -> tuple[dict[str, Any], str]:
+    for model in models:
+        if model == exclude or model in unavailable:
+            continue
+        if reserve_calls and not any(other != model and other not in unavailable for other in models):
+            raise ResearchError("no distinct Gemini reviewer model remains")
+        if budget[0] + 1 + reserve_calls > MAX_GENERATION_CALLS:
+            raise ResearchError("Gemini generation budget cannot cover separate review")
+        try:
+            return _gemini_json(session, key, model, prompt, budget, temperature), model
+        except ModelUnavailable:
+            unavailable[model] = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
+    raise ResearchError("two distinct available free-tier Gemini models are required")
 
 
 def _writer_prompt(url: str, title: str, source: str) -> str:
@@ -304,21 +328,35 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
         if not isinstance(state, dict) or any(
                 not isinstance(state.get(field, []), list) or
                 any(not isinstance(item, str) for item in state.get(field, []))
-                for field in ("used_source_urls", "used_source_hashes")):
+                for field in ("used_source_urls", "used_source_hashes")) or not isinstance(
+                    state.get("model_unavailable_until", {}), dict):
             raise ValueError("invalid research state")
     except (ValueError, OSError) as exc:
         _write_json(state_file, {"status": "failed", "error": f"invalid research state: {exc}",
                                  "checked_at": datetime.now(timezone.utc).isoformat(),
                                  "generation_calls": 0})
         return []
-    state = {k: v for k, v in state.items() if k in ("used_source_urls", "used_source_hashes")}
-    state["checked_at"] = datetime.now(timezone.utc).isoformat()
+    state = {k: v for k, v in state.items() if k in ("used_source_urls", "used_source_hashes",
+                                                    "model_unavailable_until")}
+    checked = datetime.now(timezone.utc)
+    unavailable: dict[str, str] = {}
+    for model, until in state.get("model_unavailable_until", {}).items():
+        try:
+            parsed = datetime.fromisoformat(until)
+            if model in FREE_TIER_CANDIDATES and parsed.tzinfo and parsed > checked:
+                unavailable[model] = parsed.isoformat()
+        except (TypeError, ValueError):
+            continue
+    state["model_unavailable_until"] = unavailable
+    state["checked_at"] = checked.isoformat()
     budget = [0]
     try:
         if not key:
             raise ResearchError("GEMINI_API_KEY is unavailable")
         used_urls, used_hashes, used_ids = _existing(content_dir, state)
-        writer_model, reviewer_model = _model_names(session, key)
+        models = _model_names(session, key)
+        if len([model for model in models if model not in unavailable]) < 2:
+            raise ResearchError("two configured free-tier Gemini models are unavailable")
         pending: list[tuple[Path, dict[str, Any], str, str]] = []
         rejected: list[dict[str, str]] = []
         stopped_reason = ""
@@ -340,7 +378,9 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             digest = hashlib.sha256(source.encode("utf-8")).hexdigest()
             if digest in used_hashes:
                 continue
-            candidate = _gemini_json(session, key, writer_model, _writer_prompt(url, title, source), budget, 0.6)
+            candidate, writer_model = _generate_available(
+                session, key, models, unavailable, _writer_prompt(url, title, source), budget, 0.6,
+                reserve_calls=1)
             try:
                 validate_script(candidate, url, source)
             except ResearchError as exc:
@@ -352,7 +392,9 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             candidate["scenes"] = [{key: scene[key] for key in
                                     ("narration", "heading", "visual", "items", "label", "evidence_quote")}
                                    for scene in candidate["scenes"]]
-            review = _gemini_json(session, key, reviewer_model, _reviewer_prompt(candidate, url, source), budget, 0.1)
+            review, reviewer_model = _generate_available(
+                session, key, models, unavailable, _reviewer_prompt(candidate, url, source), budget, 0.1,
+                exclude=writer_model)
             gates = ("factual_fidelity", "practical_advice", "quality", "diversity", "no_invented_incidents")
             failed_gates = [gate for gate in gates if review.get(gate) is not True]
             if failed_gates:
