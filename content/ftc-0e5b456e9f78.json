@@ -1,0 +1,107 @@
+{
+  "id": "ftc-0e5b456e9f78",
+  "title": "The Fake Car Dealership Website Scam",
+  "hook": "Imagine showing up at the dealership and finding out the dealer has no record of your payment.",
+  "source_urls": [
+    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know"
+  ],
+  "description": "FTC-documented pattern: Scammers are cloning real auto dealer websites to steal upfront payments. Learn how to protect yourself. Source: https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "Imagine showing up at the dealership and finding out the dealer has no record of your payment.",
+      "heading": "A Disappointing Arrival",
+      "visual": "phone",
+      "items": [
+        "Empty lot",
+        "No car"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "While the car-buying process can be stressful, whether you’re shopping online or in person, the thought of driving off the dealer’s lot with that sweet ride you’ve had your eyes on can be exhilarating. But imagine showing up at the dealership and finding out the dealer has no record of your order or your payment. And that there’s no shiny car waiting for you! That’s what’s happening to unwitting car buyers who’ve been duped by scammers impersonating a car dealership. How the scam works Scammers"
+    },
+    {
+      "narration": "Scammers set up bogus car dealership websites to trick you into paying up front for a car.",
+      "heading": "The Digital Trap",
+      "visual": "profile",
+      "items": [
+        "Bogus website",
+        "Upfront payment"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "car buyers who’ve been duped by scammers impersonating a car dealership. How the scam works Scammers set up bogus car dealership websites to trick you into paying up front for a car you’ll never lay hands on. They clone a real auto dealer’s website — often using AI to do so — copying the brand logos, vehicle listings, and photos down to the last detail. Some websites even include fake customer testimonials. They might advertise rare muscle cars or hard-to-find classics to lure you in. They"
+    },
+    {
+      "narration": "They clone real dealer websites by copying brand logos, vehicle listings, and even photos.",
+      "heading": "Perfect Clones",
+      "visual": "flow",
+      "items": [
+        "Cloned logos",
+        "Vehicle listings"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "car buyers who’ve been duped by scammers impersonating a car dealership. How the scam works Scammers set up bogus car dealership websites to trick you into paying up front for a car you’ll never lay hands on. They clone a real auto dealer’s website — often using AI to do so — copying the brand logos, vehicle listings, and photos down to the last detail. Some websites even include fake customer testimonials. They might advertise rare muscle cars or hard-to-find classics to lure you in. They"
+    },
+    {
+      "narration": "These sites might advertise rare muscle cars or hard-to-find classics to lure you in.",
+      "heading": "The Lure",
+      "visual": "profile",
+      "items": [
+        "Muscle cars",
+        "Classic cars"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "car buyers who’ve been duped by scammers impersonating a car dealership. How the scam works Scammers set up bogus car dealership websites to trick you into paying up front for a car you’ll never lay hands on. They clone a real auto dealer’s website — often using AI to do so — copying the brand logos, vehicle listings, and photos down to the last detail. Some websites even include fake customer testimonials. They might advertise rare muscle cars or hard-to-find classics to lure you in. They"
+    },
+    {
+      "narration": "To put you at ease, they describe the buying process and offer flexible return policies.",
+      "heading": "False Security",
+      "visual": "receipt",
+      "items": [
+        "Return policy",
+        "Process details"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "testimonials. They might advertise rare muscle cars or hard-to-find classics to lure you in. They describe the buying process in detail and offer flexible return policies to put you at ease. How to avoid the scam Here’s how to protect yourself from scammers that clone auto dealership websites. Search online for the dealer’s name with words like “scam,” “review,” or “complaint.” Any negative hits that come up are a red flag. Keep in mind that if the scammers are impersonating a real dealership,"
+    },
+    {
+      "narration": "Protect yourself by asking to see the car and the dealership in person.",
+      "heading": "Verify In Person",
+      "visual": "warning",
+      "items": [
+        "Visit dealership",
+        "See car"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "that come up are a red flag. Keep in mind that if the scammers are impersonating a real dealership, you might find glowing reviews. So go the extra mile — ask to see the car, and the dealership, in person. If they won’t let you, pump the brakes. If the car is too far for you to visit in person, tell the dealer you want to hire a mobile inspection service to check out the car. If they won’t let you, consider taking your business somewhere else. Report a scam Walk away if the dealer insists on an"
+    },
+    {
+      "narration": "Walk away if the dealer insists on an upfront payment by wire transfer only.",
+      "heading": "Red Flag",
+      "visual": "payment",
+      "items": [
+        "Wire transfer only",
+        "Walk away"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "consider taking your business somewhere else. Report a scam Walk away if the dealer insists on an upfront payment by wire transfer only . And report them at ReportFraud.ftc.gov ."
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "gemini-3.6-flash",
+    "writer": "gemma-4-26b-a4b-it",
+    "source_checked_at": "2026-10-08T18:53:59.111678+00:00",
+    "notes": "The script accurately reflects the FTC alert on spoofed car dealership websites, maintaining all conditions and proper illustration labels.",
+    "checks": {
+      "factual_fidelity": true,
+      "practical_advice": true,
+      "quality": true,
+      "diversity": true,
+      "no_invented_incidents": true,
+      "scene_evidence_complete": true,
+      "conditions_preserved": true,
+      "visual_disclosure": true
+    },
+    "source_sha256": "d7fe75c9dfe7f0fcc0bf6341a865d4c56499bb0754713782fde12b89204f33c4"
+  }
+}
