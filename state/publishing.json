@@ -16,6 +16,12 @@
       "title": "How an Email Redirected a $449K+ House Payment",
       "verified_at": "2026-10-08T17:43:59.758313+00:00",
       "superseded_by": "01-house-wire-r2"
+    },
+    "01-house-wire-r2": {
+      "status": "reserved",
+      "reserved_at": "2026-10-08T17:47:08.341376+00:00",
+      "path": "content/01-house-wire-r2.json",
+      "content_sha256": "dc3d51fb1998f79e62e30bf8ee0a55b045005a2d70b1fa35291cd44e56ce8093"
     }
   }
 }
