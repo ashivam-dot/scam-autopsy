@@ -325,7 +325,7 @@ class ResearchRunTests(unittest.TestCase):
             budget[0] += 1
             used_models.append(model)
             if model == "gemini-3.7-flash":
-                raise research.ModelTransient("Gemini model returned HTTP 503")
+                raise research.ModelTransient(503)
             return script(URL) if "Create ONE" in prompt else review()
 
         with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
@@ -341,6 +341,42 @@ class ResearchRunTests(unittest.TestCase):
         state = json.loads(self.state.read_text())
         self.assertEqual(state["generation_calls"], 3)
         self.assertNotIn("gemini-3.7-flash", state["model_unavailable_until"])
+        self.assertEqual([(a["model"], a["status"], a["detail"]) for a in state["generation_attempts"]],
+                         [("gemini-3.7-flash", "transient", "writer: HTTP 503"),
+                          ("gemini-3.6-flash", "success", "writer"),
+                          ("gemini-3.8-flash", "success", "reviewer")])
+
+    def test_total_transient_outage_records_sanitized_attempts_and_last_cause(self):
+        statuses = iter((429, 503, 502))
+
+        def unavailable(_session, _key, _model, _prompt, budget, _temperature):
+            budget[0] += 1
+            raise research.ModelTransient(next(statuses))
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=unavailable), \
+             patch.object(research.time, "sleep") as sleep:
+            self.assertEqual(self.run_it(limit=1), [])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["status"], "failed")
+        self.assertEqual(state["generation_calls"], 3)
+        self.assertEqual(state["generation_attempts"], [
+            {"model": "gemini-3.7-flash", "status": "transient", "detail": "writer: HTTP 429"},
+            {"model": "gemini-3.6-flash", "status": "transient", "detail": "writer: HTTP 503"},
+            {"model": "gemini-3.8-flash", "status": "transient", "detail": "writer: HTTP 502"}])
+        self.assertIn("gemini-3.8-flash writer: HTTP 502", state["error"])
+        sleep.assert_called_once_with(2)
+
+    def test_request_exception_text_is_not_persisted(self):
+        with patch.object(research, "_model_names", side_effect=research.requests.HTTPError(
+                "Authorization API_KEY_UNSAFE in request URL")):
+            self.assertEqual(self.run_it(limit=1), [])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["error"], "HTTPError")
+        self.assertNotIn("API_KEY_UNSAFE", json.dumps(state))
 
     def test_read_timeout_falls_back_within_global_call_budget(self):
         used_models = []
@@ -371,7 +407,7 @@ class ResearchRunTests(unittest.TestCase):
             budget[0] += 1
             calls.append(model)
             if len(calls) == 3:
-                raise research.ModelTransient("Gemini model returned HTTP 503")
+                raise research.ModelTransient(503)
             return script(URL) if "Create ONE" in prompt else review()
 
         with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \

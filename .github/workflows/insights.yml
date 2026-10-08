@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       force_refill:
-        description: 'Also exercise bounded source research now'
+        description: 'Refill reviewed scripts now, subject to the eight-ready stock cap'
         type: boolean
         default: false
 permissions:
@@ -30,18 +30,26 @@ jobs:
           python-version: '3.12'
       - name: Install lightweight research dependencies
         run: |
+          uv export --locked --no-emit-project --no-dev --no-hashes \
+            --output-file "$RUNNER_TEMP/insights-constraints.txt" > /dev/null
           uv venv --python 3.12 .insights-venv
-          uv pip install --python .insights-venv/bin/python google-api-python-client google-auth requests beautifulsoup4
+          uv pip install --python .insights-venv/bin/python \
+            --constraint "$RUNNER_TEMP/insights-constraints.txt" \
+            google-api-python-client google-auth requests beautifulsoup4
           echo "$GITHUB_WORKSPACE/.insights-venv/bin" >> "$GITHUB_PATH"
       - name: Record analytics and evidence-limited growth decisions
         run: python -m scam_autopsy.cli stats
-      - name: Refill researched scripts once a week
+      - name: Decide bounded source refill
+        id: refill
+        if: always()
         env:
           FORCE_REFILL: ${{ inputs.force_refill }}
-        run: |
-          if [ "$(date -u +%u)" = '1' ] || [ "$FORCE_REFILL" = 'true' ]; then
-            python -m scam_autopsy.research --limit 2
-          fi
+        run: python -m scam_autopsy.refill_decision
+      - name: Refill reviewed scripts when due
+        if: ${{ always() && steps.refill.outputs.refill == 'true' }}
+        env:
+          REFILL_LIMIT: ${{ steps.refill.outputs.limit }}
+        run: python -m scam_autopsy.research --limit "$REFILL_LIMIT"
       - name: Save cloud state
         if: always()
         run: |

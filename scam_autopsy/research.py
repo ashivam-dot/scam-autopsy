@@ -57,6 +57,17 @@ class ModelUnavailable(ResearchError):
 class ModelTransient(ResearchError):
     """A model returned a bounded retryable service or quota status."""
 
+    def __init__(self, status_code: int | None = None):
+        self.status_code = status_code if status_code in (429, 502, 503, 504) else None
+        super().__init__("Gemini temporarily unavailable")
+
+
+def _safe_error(exc: Exception) -> str:
+    """Request exception strings may contain URLs or headers; never persist them."""
+    if isinstance(exc, requests.RequestException):
+        return type(exc).__name__
+    return str(exc)[:200]
+
 
 def canonical_source_url(url: str) -> str:
     """Accept only exact primary-source HTTPS hosts and safe paths."""
@@ -173,7 +184,7 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
     if response.status_code == 404:
         raise ModelUnavailable("Gemini listed model unavailable for generation")
     if response.status_code in (429, 502, 503, 504):
-        raise ModelTransient(f"Gemini model returned HTTP {response.status_code}")
+        raise ModelTransient(response.status_code)
     response.raise_for_status()
     data = response.json()
     candidates = data.get("candidates") or []
@@ -192,6 +203,7 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
 def _generate_available(session: requests.Session, key: str, models: tuple[str, ...],
                         unavailable: dict[str, str], prompt: str, budget: list[int],
                         temperature: float, temporary: set[str], delayed: list[bool],
+                        attempts: list[dict[str, str]], role: str,
                         *, exclude: str = "", reserve_calls: int = 0
                         ) -> tuple[dict[str, Any], str]:
     for model in models:
@@ -199,19 +211,44 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
             continue
         if reserve_calls and not any(other != model and other not in unavailable and
                                      other not in temporary for other in models):
-            raise ResearchError("no distinct Gemini reviewer model remains")
+            last = attempts[-1] if attempts else None
+            cause = f"; last {last['model']} {last['detail']}" if last and last["status"] != "success" else ""
+            raise ResearchError("no distinct Gemini reviewer model remains" + cause)
         if budget[0] + 1 + reserve_calls > MAX_GENERATION_CALLS:
-            raise ResearchError("Gemini generation budget cannot cover separate review")
+            last = attempts[-1] if attempts else None
+            cause = f"; last {last['model']} {last['detail']}" if last and last["status"] != "success" else ""
+            raise ResearchError("Gemini generation budget cannot cover separate review" + cause)
         try:
-            return _gemini_json(session, key, model, prompt, budget, temperature), model
+            result = _gemini_json(session, key, model, prompt, budget, temperature)
+            attempts.append({"model": model, "status": "success", "detail": role})
+            return result, model
         except ModelUnavailable:
+            attempts.append({"model": model, "status": "not_found", "detail": f"{role}: HTTP 404"})
             unavailable[model] = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
-        except (ModelTransient, requests.exceptions.ReadTimeout):
+        except ModelTransient as exc:
+            detail = f"{role}: HTTP {exc.status_code}" if exc.status_code else f"{role}: retryable HTTP error"
+            attempts.append({"model": model, "status": "transient", "detail": detail})
             temporary.add(model)
             if not delayed[0]:
                 time.sleep(2)
                 delayed[0] = True
-    raise ResearchError("two distinct available free-tier Gemini models are required")
+        except requests.exceptions.ReadTimeout:
+            attempts.append({"model": model, "status": "read_timeout", "detail": role})
+            temporary.add(model)
+            if not delayed[0]:
+                time.sleep(2)
+                delayed[0] = True
+        except ResearchError as exc:
+            attempts.append({"model": model, "status": "generation_error", "detail": f"{role}: {_safe_error(exc)}"})
+            raise
+        except requests.RequestException as exc:
+            code = getattr(getattr(exc, "response", None), "status_code", None)
+            detail = f"HTTP {code}" if isinstance(code, int) and 100 <= code <= 599 else type(exc).__name__
+            attempts.append({"model": model, "status": "request_error", "detail": f"{role}: {detail}"})
+            raise
+    last = attempts[-1] if attempts else None
+    cause = f"; last {last['model']} {last['detail']}" if last and last["status"] != "success" else ""
+    raise ResearchError("two distinct available free-tier Gemini models are required" + cause)
 
 
 def _writer_prompt(url: str, title: str, source: str) -> str:
@@ -339,7 +376,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                     state.get("model_unavailable_until", {}), dict):
             raise ValueError("invalid research state")
     except (ValueError, OSError) as exc:
-        _write_json(state_file, {"status": "failed", "error": f"invalid research state: {exc}",
+        _write_json(state_file, {"status": "failed", "error": "invalid research state",
                                  "checked_at": datetime.now(timezone.utc).isoformat(),
                                  "generation_calls": 0})
         return []
@@ -357,6 +394,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
     state["model_unavailable_until"] = unavailable
     state["checked_at"] = checked.isoformat()
     budget = [0]
+    attempts: list[dict[str, str]] = []
+    state["generation_attempts"] = attempts
     try:
         if not key:
             raise ResearchError("GEMINI_API_KEY is unavailable")
@@ -382,7 +421,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             try:
                 source = extract_article(_get_public(session, url))
             except (ResearchError, requests.RequestException) as exc:
-                rejected.append({"source_url": url, "reason": f"source unavailable: {str(exc)[:150]}"})
+                rejected.append({"source_url": url, "reason": f"source unavailable: {_safe_error(exc)}"})
                 continue
             digest = hashlib.sha256(source.encode("utf-8")).hexdigest()
             if digest in used_hashes:
@@ -390,9 +429,9 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             try:
                 candidate, writer_model = _generate_available(
                     session, key, models, unavailable, _writer_prompt(url, title, source), budget, 0.6,
-                    temporary_unavailable, delayed, reserve_calls=1)
+                    temporary_unavailable, delayed, attempts, "writer", reserve_calls=1)
             except (ResearchError, requests.RequestException) as exc:
-                stopped_reason = str(exc)[:200]
+                stopped_reason = _safe_error(exc)
                 break
             try:
                 validate_script(candidate, url, source)
@@ -408,9 +447,9 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             try:
                 review, reviewer_model = _generate_available(
                     session, key, models, unavailable, _reviewer_prompt(candidate, url, source), budget, 0.1,
-                    temporary_unavailable, delayed, exclude=writer_model)
+                    temporary_unavailable, delayed, attempts, "reviewer", exclude=writer_model)
             except (ResearchError, requests.RequestException) as exc:
-                stopped_reason = str(exc)[:200]
+                stopped_reason = _safe_error(exc)
                 break
             gates = ("factual_fidelity", "practical_advice", "quality", "diversity", "no_invented_incidents")
             failed_gates = [gate for gate in gates if review.get(gate) is not True]
@@ -455,7 +494,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
         return [path for path, _, _, _ in pending]
     except (ResearchError, requests.RequestException, ET.ParseError, ValueError,
             KeyError, TypeError, AttributeError) as exc:
-        state.update(status="failed", error=str(exc)[:300], generation_calls=budget[0])
+        state.update(status="failed", error=_safe_error(exc), generation_calls=budget[0])
         _write_json(state_file, state)
         return []
 
