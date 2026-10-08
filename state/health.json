@@ -1,16 +1,25 @@
 {
-  "checked_at": "2026-10-08T18:19:12.109953+00:00",
+  "checked_at": "2026-10-08T18:27:26.110158+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
-  "status": "healthy",
+  "status": "needs_attention",
   "counts": {
     "reviewed_stock": 7,
-    "ready_queue": 6,
+    "ready_queue": 5,
     "confirmed_public_cases": 1,
     "private_previews": 1,
-    "active_reservations": 0,
+    "active_reservations": 1,
     "analytics_rows": 3,
     "eligible_comparisons": 0
   },
-  "last_pipeline_failure": null,
-  "alerts": []
+  "last_pipeline_failure": {
+    "component": "research",
+    "at": "2026-10-08T18:26:57.116306+00:00",
+    "status": "failed"
+  },
+  "alerts": [
+    {
+      "code": "research_failed",
+      "detail": ""
+    }
+  ]
 }
