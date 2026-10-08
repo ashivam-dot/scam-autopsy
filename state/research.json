@@ -1,13 +1,8 @@
 {
   "model_unavailable_until": {},
-  "checked_at": "2026-10-08T18:02:06.863028+00:00",
+  "checked_at": "2026-10-08T18:08:05.822994+00:00",
   "status": "failed",
   "generation_calls": 3,
-  "rejected": [
-    {
-      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
-      "reason": "writer validation: narration word count 95 outside 108-125"
-    }
-  ],
-  "error": "Gemini generation budget cannot cover separate review"
+  "rejected": [],
+  "error": "no distinct Gemini reviewer model remains"
 }
