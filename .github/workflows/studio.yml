@@ -5,7 +5,7 @@ on:
   workflow_dispatch:
     inputs:
       case_id:
-        description: 'Optional reviewed case ID; blank selects queue head'
+        description: 'Reviewed case ID; required for manual public runs, optional for private previews'
         required: false
         default: ''
       visibility:
@@ -50,7 +50,21 @@ jobs:
         id: reserve
         env:
           REQUESTED_CASE: ${{ inputs.case_id }}
-        run: uv run python -m scam_autopsy.cli reserve ${REQUESTED_CASE:+--case "$REQUESTED_CASE"}
+          VISIBILITY: ${{ inputs.visibility }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          args=(reserve)
+          if [ -n "$REQUESTED_CASE" ]; then
+            args+=(--case "$REQUESTED_CASE")
+          fi
+          if [ "$EVENT_NAME" = 'workflow_dispatch' ]; then
+            if [ "$VISIBILITY" = 'public' ]; then
+              args+=(--public-confirmed)
+            else
+              args+=(--private)
+            fi
+          fi
+          uv run python -m scam_autopsy.cli "${args[@]}"
       - name: Render narration and original animation
         if: steps.reserve.outputs.case != ''
         env:
@@ -60,13 +74,12 @@ jobs:
         if: steps.reserve.outputs.case != ''
         env:
           CASE_PATH: ${{ steps.reserve.outputs.path }}
-          VISIBILITY: ${{ inputs.visibility }}
-          EVENT_NAME: ${{ github.event_name }}
+          INTENT: ${{ steps.reserve.outputs.intent }}
         run: |
-          if [ "$EVENT_NAME" = 'schedule' ] || [ "$VISIBILITY" = 'public' ]; then
-            uv run python -m scam_autopsy.cli publish "$CASE_PATH" build/episode.mp4
-          else
+          if [ "$INTENT" = 'private' ]; then
             uv run python -m scam_autopsy.cli publish "$CASE_PATH" build/episode.mp4 --private
+          else
+            uv run python -m scam_autopsy.cli publish "$CASE_PATH" build/episode.mp4
           fi
       - name: Preserve media and quality receipts
         if: always()

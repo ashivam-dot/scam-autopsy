@@ -100,20 +100,29 @@ def upload_private(api, case, media: Path):
     return response["id"]
 
 
-def finalize(api, case, video_id, publish=True, max_wait=420):
+def finalize(api, case, video_id, publish=True, max_wait=420, marker_wait=90):
     identity(api)
     deadline = time.monotonic() + max_wait
+    marker_deadline = min(deadline, time.monotonic() + marker_wait)
     while True:
         videos = api.videos().list(part="snippet,status,processingDetails,contentDetails", id=video_id).execute().get("items", [])
         if len(videos) != 1:
             raise RuntimeError("Uploaded video cannot be verified")
         video = videos[0]
-        if video["snippet"]["channelId"] != CHANNEL_ID or marker(case) not in video["snippet"].get("tags", []):
-            raise RuntimeError("Video identity/marker mismatch")
+        if video["snippet"]["channelId"] != CHANNEL_ID:
+            raise RuntimeError("Video channel mismatch")
         processing = video.get("processingDetails", {}).get("processingStatus")
         upload_status = video["status"].get("uploadStatus")
         if processing in ("failed", "terminated") or upload_status in ("failed", "rejected", "deleted"):
             raise RuntimeError("YouTube processing rejected the video")
+        tags = video["snippet"].get("tags") or []
+        if any(tag.startswith("scam-autopsy:") and tag != marker(case) for tag in tags):
+            raise RuntimeError("Video belongs to another case marker")
+        if marker(case) not in tags:
+            if time.monotonic() >= marker_deadline:
+                raise RuntimeError("Video marker unavailable after bounded readback")
+            time.sleep(min(5, max(0, marker_deadline - time.monotonic())))
+            continue
         if processing == "succeeded" or upload_status == "processed":
             break
         if time.monotonic() >= deadline:
@@ -124,6 +133,8 @@ def finalize(api, case, video_id, publish=True, max_wait=420):
         api.videos().update(part="status", body={"id": video_id, "status": status}).execute()
     verified = api.videos().list(part="status,snippet,contentDetails", id=video_id).execute()["items"][0]
     expected = "public" if publish else "private"
+    if verified["snippet"]["channelId"] != CHANNEL_ID or marker(case) not in verified["snippet"].get("tags", []):
+        raise RuntimeError("Final video identity/marker mismatch")
     if verified["status"]["privacyStatus"] != expected:
         raise RuntimeError("Privacy verification failed")
     return {"video_id": video_id, "url": "https://www.youtube.com/watch?v=" + video_id, "channel_id": CHANNEL_ID, "privacy": expected, "processing": "succeeded", "duration": verified["contentDetails"]["duration"], "title": verified["snippet"]["title"]}

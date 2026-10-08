@@ -44,6 +44,54 @@ def test_duplicate_uploaded_case_stops_republication(monkeypatch):
     with pytest.raises(RuntimeError, match="Duplicate"): youtube.find_case(None, None, value)
 
 
+def _video(value, *, tags=None, channel=None, privacy="private"):
+    return {"id": "video", "snippet": {"channelId": channel or youtube.CHANNEL_ID,
+            "tags": tags if tags is not None else [], "title": value["title"]},
+            "status": {"privacyStatus": privacy, "uploadStatus": "processed"},
+            "processingDetails": {"processingStatus": "succeeded"},
+            "contentDetails": {"duration": "PT51S"}}
+
+
+def test_finalize_retries_transient_missing_marker_on_own_channel(monkeypatch):
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    missing = _video(value)
+    marked = _video(value, tags=[youtube.marker(value)])
+    api.videos.return_value.list.return_value.execute.side_effect = [
+        {"items": [missing]}, {"items": [marked]}, {"items": [marked]}
+    ]
+    monkeypatch.setattr(youtube.time, "sleep", lambda seconds: None)
+    receipt = youtube.finalize(api, value, "video", publish=False)
+    assert receipt["privacy"] == "private"
+    assert api.videos.return_value.list.call_count == 3
+    api.videos.return_value.update.assert_not_called()
+
+
+def test_finalize_missing_marker_expires_without_public_write():
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [_video(value)]}
+    with pytest.raises(RuntimeError, match="marker unavailable"):
+        youtube.finalize(api, value, "video", publish=True, marker_wait=0)
+    api.videos.return_value.update.assert_not_called()
+
+
+@pytest.mark.parametrize("bad", ["other_channel", "other_case"])
+def test_finalize_never_publishes_wrong_identity_or_case(bad):
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    video = (_video(value, channel="another-channel") if bad == "other_channel" else
+             _video(value, tags=["scam-autopsy:another-case"]))
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [video]}
+    with pytest.raises(RuntimeError, match="channel mismatch|another case marker"):
+        youtube.finalize(api, value, "video", publish=True)
+    assert api.videos.return_value.list.call_count == 1
+    api.videos.return_value.update.assert_not_called()
+
+
 def test_description_has_primary_sources_and_synthetic_narration():
     text = youtube.description(case())
     assert "ic3.gov" in text and "synthetic narration" in text and len(text) < 5000
