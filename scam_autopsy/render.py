@@ -129,6 +129,16 @@ def _text(draw: ImageDraw.ImageDraw, xy: tuple[int, int], text: str, *, size: in
     return y
 
 
+def _heading_size(draw: ImageDraw.ImageDraw, heading: str, max_width: int = 540) -> int:
+    """Keep a short scene heading complete within two safe-area lines."""
+    for size in range(51, 31, -1):
+        font = _font(size, bold=True)
+        lines = _fit_lines(draw, heading, font, max_width, max_lines=max(2, len(heading.split())))
+        if len(lines) <= 2 and all(draw.textlength(line, font=font) <= max_width for line in lines):
+            return size
+    return 32
+
+
 def _ease(value: float) -> float:
     value = max(0.0, min(1.0, value))
     return value * value * (3 - 2 * value)
@@ -261,7 +271,8 @@ def _draw_receipt(draw: ImageDraw.ImageDraw, scene: Scene, t: float, accent: tup
     slide = int((1 - _ease(t / 0.6)) * 80)
     _rounded(draw, (149, 400 + slide, 570, 839 + slide), WHITE, 12, accent, 3)
     _rounded(draw, (178, 429 + slide, 542, 472 + slide), NAVY, 8)
-    _text(draw, (195, 437 + slide), "SOURCE RECORD", size=19, fill=MINT, bold=True, max_width=320, max_lines=1)
+    document_header = "ILLUSTRATED DOCUMENT" if scene.label.strip().lower() == "illustration" else "SOURCE RECORD"
+    _text(draw, (195, 437 + slide), document_header, size=19, fill=MINT, bold=True, max_width=320, max_lines=1)
     for i, item in enumerate(scene.items[:3]):
         if t < 0.55 + i * 0.53:
             continue
@@ -344,7 +355,8 @@ def render_frame(case: dict[str, Any], scene_index: int, local_time: float, back
         draw.line((x0, 191, x1, 191), fill=color, width=5)
     _text(draw, (68, 219), scene.label.upper(), size=21, fill=accent, bold=True, max_width=550, max_lines=1)
     heading_y = 253 + int((1 - _ease(local_time / 0.45)) * 18)
-    _text(draw, (68, heading_y), scene.heading, size=51, fill=WHITE, bold=True, max_width=540, max_lines=2, spacing=4)
+    _text(draw, (68, heading_y), scene.heading, size=_heading_size(draw, scene.heading),
+          fill=WHITE, bold=True, max_width=540, max_lines=2, spacing=4)
     _ART[_kind(scene.visual)](draw, scene, local_time, accent)
     sources = list(dict.fromkeys(_source_name(url) for url in case["source_urls"]))
     source = " · ".join(sources[:2])

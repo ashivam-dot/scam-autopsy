@@ -42,10 +42,53 @@ def review() -> dict:
     return {"factual_fidelity": True, "practical_advice": True, "quality": True,
             "diversity": True, "no_invented_incidents": True, "scene_evidence_complete": True,
             "conditions_preserved": True, "visual_disclosure": True,
-            "notes": "The mechanism and action match the source."}
+            "notes": "The mechanism and action match the source.", "first_failure_scene": None}
 
 
 class SourceValidationTests(unittest.TestCase):
+    def test_citation_passages_are_bounded_and_literal_source_substrings(self):
+        source = (SOURCE + " ") * 40
+        passages = research._source_passages(source)
+        self.assertTrue(passages)
+        self.assertLessEqual(len(passages), research.MAX_CITATION_PASSAGES)
+        self.assertTrue(all(0 < len(passage) <= 500 and passage in source[:14000]
+                            for passage in passages))
+        self.assertIn(source[:100], passages[0])
+        self.assertIn(source[:14000][-100:], passages[-1])
+
+    def test_citation_ids_materialize_owned_quotes_and_reject_invalid_ids(self):
+        passages = research._source_passages(SOURCE)
+        candidate = script()
+        for scene in candidate["scenes"]:
+            scene["evidence_quote_id"] = 1
+            scene["evidence_quote"] = "fabricated quote that must be discarded"
+        research._materialize_scene_quotes(candidate, passages)
+        self.assertTrue(all(scene["evidence_quote"] == passages[0] and
+                            "evidence_quote_id" not in scene for scene in candidate["scenes"]))
+        self.assertEqual(research.validate_script(candidate, URL, SOURCE), candidate)
+
+        for bad_id in (0, len(passages) + 1, True, "1", 1.0):
+            with self.subTest(bad_id=bad_id):
+                invalid = script()
+                invalid["scenes"][0]["evidence_quote_id"] = bad_id
+                with self.assertRaisesRegex(research.ResearchError,
+                                            "scene 1 invalid evidence quote ID"):
+                    research._materialize_scene_quotes(invalid, passages)
+
+        absent = script()
+        del absent["scenes"][0]["evidence_quote"]
+        research._materialize_scene_quotes(absent, passages)
+        with self.assertRaisesRegex(research.ResearchError, "scene 1 evidence_quote"):
+            research.validate_script(absent, URL, SOURCE)
+
+    def test_materialized_quote_does_not_permit_changed_numbers(self):
+        candidate = script()
+        candidate["scenes"][0]["evidence_quote_id"] = 1
+        candidate["scenes"][0]["narration"] += " They demand $8,000."
+        research._materialize_scene_quotes(candidate, research._source_passages(SOURCE))
+        with self.assertRaisesRegex(research.ResearchError, "scene 1 numeric claim"):
+            research.validate_script(candidate, URL, SOURCE)
+
     def test_rejects_ssrf_credentials_ip_and_lookalike_hosts(self):
         bad = [
             "http://consumer.ftc.gov/consumer-alerts/2026/09/fake-tractor-listing",
@@ -505,6 +548,31 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["status"], "failed")
         self.assertIn("conditions_preserved", state["rejected"][0]["reason"])
         self.assertEqual(list(self.content.glob("*.json")), [])
+
+    def test_unsupported_scene_claim_is_still_rejected_by_reviewer_with_owned_quote(self):
+        candidate = script()
+        candidate["scenes"][0]["heading"] = "HIJACKED LOGOS"
+        for scene in candidate["scenes"]:
+            scene.pop("evidence_quote")
+            scene["evidence_quote_id"] = 1
+        weak_review = {**review(), "scene_evidence_complete": False,
+                       "notes": "The cited passage says nothing about hijacked logos.",
+                       "first_failure_scene": 1}
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[candidate, weak_review]) as generate:
+            self.assertEqual(self.run_it(limit=1), [])
+        review_prompt = generate.call_args_list[1].args[3]
+        self.assertIn('"heading": "HIJACKED LOGOS"', review_prompt)
+        self.assertIn('"evidence_quote":', review_prompt)
+        self.assertNotIn("evidence_quote_id", review_prompt.split("Proposed script:")[-1])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["rejected"][0]["reason"],
+                         "reviewer rejected: scene 1: scene_evidence_complete")
+        self.assertEqual(generate.call_count, 2)
 
     def test_old_transient_models_return_to_normal_priority(self):
         from datetime import datetime, timedelta, timezone
