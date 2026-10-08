@@ -1,105 +1,116 @@
 {
   "id": "ftc-2194d7d723df",
-  "title": "FTC Warning: Fake Farm Equipment Sellers",
-  "hook": "Are you looking for farm equipment online? Watch out for this sneaky impersonation scam.",
+  "title": "The Tractor That Never Arrived: A Fake Seller Trap",
+  "hook": "The tractor never arrives. What looked like a legitimate seller was a scam.",
   "source_urls": [
     "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses"
   ],
-  "description": "Learn how to spot and avoid a sophisticated FTC-documented pattern where scammers impersonate legitimate farm equipment businesses online. Protect your money by verifying sellers independently. Read the full warning from the FTC here: https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
+  "description": "FTC-documented pattern: fake farm-equipment sellers use familiar business names, send agreements and invoices, request deposits or full payment, and fail to deliver. Before paying, verify seller contact details through unpaid search results. Source: https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses. Visuals are illustrations.",
   "format": "short",
   "scenes": [
     {
-      "narration": "Scammers are actively impersonating real farm equipment sellers online to target buyers.",
-      "heading": "Fake Farm Ads",
+      "narration": "The tractor never arrives. What looked like a legitimate seller was a scam.",
+      "heading": "THE NON-DELIVERY TRAP",
       "visual": "profile",
       "items": [
-        "Impersonated brands",
-        "Fake social ads"
-      ],
-      "label": "Illustration",
-      "evidence_quote": "Scammers posing as farm equipment businesses are selling (fake) equipment to farmers"
-    },
-    {
-      "narration": "They hijack trusted brand names in search results and social media feeds to build instant trust.",
-      "heading": "Familiar Names",
-      "visual": "phone",
-      "items": [
-        "Hijacked logos",
-        "Spoofed websites"
-      ],
-      "label": "Illustration",
-      "evidence_quote": "Or you search online and see a tractor from a business you know, and maybe even bought equipment from before."
-    },
-    {
-      "narration": "Next, they send realistic purchase agreements, demanding thousands of dollars upfront via wire transfers.",
-      "heading": "The Invoice",
-      "visual": "receipt",
-      "items": [
-        "Fake invoice",
-        "Wire demand"
-      ],
-      "label": "Illustration",
-      "evidence_quote": "They typically ask you to send thousands of dollars — usually by wire transfer — as a deposit or full payment"
-    },
-    {
-      "narration": "But the delivery never arrives. Scammers cut off contact, leaving buyers empty-handed.",
-      "heading": "Empty Handed",
-      "visual": "flow",
-      "items": [
-        "Missed delivery",
-        "No response"
+        "Missing tractor",
+        "False business"
       ],
       "label": "Illustration",
       "evidence_quote": "The delivery never comes. It turns out this was never a legit business and was all a scam."
     },
     {
-      "narration": "Protect yourself. Research the seller online using their name plus the word scam or complaint.",
-      "heading": "Verify First",
-      "visual": "warning",
+      "narration": "A tractor ad may appear on social media, or an online search may show a business you know.",
+      "heading": "FAMILIAR BUSINESS",
+      "visual": "phone",
       "items": [
-        "Search name + 'scam'",
-        "Skip paid ads"
+        "Social ad",
+        "Known business"
       ],
-      "label": "SOURCE: FTC",
-      "evidence_quote": "Do some research by searching online for the company name plus “scam” or “complaint.”"
+      "label": "Illustration",
+      "evidence_quote": "It starts like this: you might scroll through social media and see an ad for a tractor. It’s a good price and looks like it’s from a legit business. Or you search online and see a tractor from a business you know, and maybe even bought equipment from before."
     },
     {
-      "narration": "Never send money if a seller insists on wire transfers, gift cards, or cryptocurrency.",
-      "heading": "Payment Rules",
+      "narration": "After contact, the seller sends a purchase agreement and invoice, then schedules delivery.",
+      "heading": "PAPER TRAIL",
+      "visual": "receipt",
+      "items": [
+        "Agreement",
+        "Invoice",
+        "Delivery date"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "In either case, when you contact them, they send a purchase agreement and invoice. They typically ask you to send thousands of dollars — usually by wire transfer — as a deposit or full payment, and schedule a delivery date."
+    },
+    {
+      "narration": "They usually ask for thousands of dollars, often by wire, as a deposit or full payment.",
+      "heading": "PAYMENT REQUEST",
       "visual": "payment",
       "items": [
-        "No wires",
-        "No gift cards",
-        "No crypto"
+        "Thousands requested",
+        "Usually a wire"
       ],
-      "label": "SOURCE: FTC",
-      "evidence_quote": "Never send money to anyone who says you can only pay by wire transfer , gift card , cryptocurrency , or payment app ."
+      "label": "Illustration",
+      "evidence_quote": "In either case, when you contact them, they send a purchase agreement and invoice. They typically ask you to send thousands of dollars — usually by wire transfer — as a deposit or full payment, and schedule a delivery date."
     },
     {
-      "narration": "Always verify contact details independently, and report any suspicious activity directly to the FTC.",
-      "heading": "Report Fraud",
+      "narration": "When delivery fails, the scammer may stop answering or invent an excuse about the delivery truck.",
+      "heading": "NO TRACTOR",
+      "visual": "flow",
+      "items": [
+        "No delivery",
+        "Silence or excuse"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "The delivery never comes. It turns out this was never a legit business and was all a scam. The scammer either stops answering or makes up another excuse (e.g., there’s an issue with the delivery truck). You’re out both the money and a tractor."
+    },
+    {
+      "narration": "Search the company name with 'scam' or 'complaint.' Skip paid ads and confirm contact details through unpaid results.",
+      "heading": "VERIFY THE SELLER",
+      "visual": "warning",
+      "items": [
+        "Name + scam",
+        "Skip paid ads",
+        "Check unpaid results"
+      ],
+      "label": "SOURCE: FTC",
+      "evidence_quote": "Do some research by searching online for the company name plus “scam” or “complaint.” Know that the first search results you see might be paid ads. Sometimes scammers place them: they pretend to be a real business but use their own contact info instead. Scroll past those ads to the unpaid search results to help confirm you have the right website or contact information."
+    },
+    {
+      "narration": "If they insist that wire, gift card, crypto, or payment app is your only option, don't pay. Report impersonation at ReportFraud.ftc.gov.",
+      "heading": "PAYMENT RULE",
       "visual": "cards",
       "items": [
-        "Independent lookup",
+        "Only risky payment? Stop",
         "ReportFraud.ftc.gov"
       ],
       "label": "SOURCE: FTC",
-      "evidence_quote": "Spot an impersonation scam? Tell the FTC at ReportFraud.ftc.gov ."
+      "evidence_quote": "Never send money to anyone who says you can only pay by wire transfer , gift card , cryptocurrency , or payment app . Scammers prefer these methods because once they’ve collected the money, it’s almost impossible to get it back. Spot an impersonation scam? Tell the FTC at ReportFraud.ftc.gov ."
     }
   ],
   "approved": true,
   "review": {
-    "reviewer": "gemini-3.1-flash-lite",
-    "writer": "gemini-3.5-flash",
-    "source_checked_at": "2026-10-08T18:18:33.631852+00:00",
-    "notes": "The proposed script accurately reflects the FTC alert. It correctly identifies the scam mechanism, verification steps, and reporting procedures without adding speculative details or invented victim stories. All UI elements are appropriately labeled as illustrations.",
-    "checks": {
-      "factual_fidelity": true,
-      "practical_advice": true,
-      "quality": true,
-      "diversity": true,
-      "no_invented_incidents": true
-    },
-    "source_sha256": "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
+    "reviewer": "direct-primary-source-review-2026-10-08",
+    "source_checked_at": "2026-10-08T18:21:37.692903+00:00",
+    "source_sha256": "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93",
+    "notes": [
+      "Directly compared title, hook, description, every narration line, on-screen item, label, and scene quote with the FTC article text.",
+      "Removed unsupported logos and spoofed sites; retained both possible scammer responses; made the risky-only payment condition explicit.",
+      "Original automated reviewer returned all-true despite unsupported details; automated checks do not guarantee factual accuracy."
+    ],
+    "automated_review": {
+      "reviewer": "gemini-3.1-flash-lite",
+      "writer": "gemini-3.5-flash",
+      "source_checked_at": "2026-10-08T18:18:33.631852+00:00",
+      "notes": "The proposed script accurately reflects the FTC alert. It correctly identifies the scam mechanism, verification steps, and reporting procedures without adding speculative details or invented victim stories. All UI elements are appropriately labeled as illustrations.",
+      "checks": {
+        "factual_fidelity": true,
+        "practical_advice": true,
+        "quality": true,
+        "diversity": true,
+        "no_invented_incidents": true
+      },
+      "source_sha256": "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
+    }
   }
 }

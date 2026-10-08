@@ -1,0 +1,35 @@
+{
+  "case_id": "ftc-2194d7d723df",
+  "audited_at": "2026-10-08T18:21:37.692903+00:00",
+  "reviewer": "direct-primary-source-review-2026-10-08",
+  "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
+  "source_sha256": "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93",
+  "original_draft": "Local evidence/ftc-first-generated-draft.json (outside repository)",
+  "revised_script": "content/ftc-2194d7d723df.json",
+  "decision": "approved_after_direct_revision",
+  "narration_words": 117,
+  "scene_count": 7,
+  "validator": "scam_autopsy.research.validate_script passed against directly fetched FTC article",
+  "original_automated_review": {
+    "writer": "gemini-3.5-flash",
+    "reviewer": "gemini-3.1-flash-lite",
+    "checks": {
+      "factual_fidelity": true,
+      "practical_advice": true,
+      "quality": true,
+      "diversity": true,
+      "no_invented_incidents": true
+    },
+    "false_positive": true
+  },
+  "corrections": [
+    "Replaced generic hook and title with a concrete non-invented outcome.",
+    "Removed claims that logos were hijacked or websites were spoofed; the FTC article does not support them.",
+    "Preserved the FTC alternatives: scammers may stop answering or make delivery excuses.",
+    "Conditioned payment warning on a seller insisting risky methods are the only options.",
+    "Changed the simulated payment card label to Illustration.",
+    "Selected exact contiguous source passages supporting each scene narration, heading, and item.",
+    "The spoken first scene opens with the non-delivery outcome; the separate hook metadata is not relied on as narration."
+  ],
+  "publication_limit": "Source and editorial checks reduce error but cannot guarantee factual accuracy or performance."
+}
