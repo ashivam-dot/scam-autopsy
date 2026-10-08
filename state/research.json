@@ -1,7 +1,13 @@
 {
   "model_unavailable_until": {},
-  "checked_at": "2026-10-08T17:58:33.566389+00:00",
+  "checked_at": "2026-10-08T18:02:06.863028+00:00",
   "status": "failed",
-  "error": "503 Server Error: Service Unavailable for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent",
-  "generation_calls": 1
+  "generation_calls": 3,
+  "rejected": [
+    {
+      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
+      "reason": "writer validation: narration word count 95 outside 108-125"
+    }
+  ],
+  "error": "Gemini generation budget cannot cover separate review"
 }
