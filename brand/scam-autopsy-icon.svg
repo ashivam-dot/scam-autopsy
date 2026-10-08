@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800" viewBox="0 0 800 800" role="img" aria-label="Scam Autopsy alert magnifier">
+<rect width="800" height="800" fill="#0b1629"/>
+<rect x="29" y="29" width="742" height="742" rx="102" fill="none" stroke="#33535e" stroke-width="6"/>
+<path d="M456 436 L636 616" fill="none" stroke="#ff6963" stroke-width="54" stroke-linecap="round"/>
+<circle cx="330" cy="310" r="175" fill="none" stroke="#6bebc4" stroke-width="32"/>
+<path d="M238 400 A128 128 0 0 1 218 366" fill="none" stroke="#f8fafa" stroke-width="11" stroke-linecap="round"/>
+<rect x="310" y="208" width="40" height="142" rx="20" fill="#ff6963"/>
+<circle cx="330" cy="411" r="23" fill="#ff6963"/>
+</svg>

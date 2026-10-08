@@ -1,0 +1,93 @@
+{
+  "id": "03-task-job",
+  "title": "The Work-From-Home Job That Charges You to Work",
+  "hook": "The job was clicking a button. Then the employer asked for crypto.",
+  "source_urls": [
+    "https://www.ic3.gov/PSA/2024/PSA240604"
+  ],
+  "description": "FBI IC3 warning, 4 June 2024: fake work-from-home task jobs may ask applicants to pay cryptocurrency to unlock work while showing earnings that cannot be cashed out. Source: https://www.ic3.gov/PSA/2024/PSA240604 . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "The job is clicking a button. Then your supposed employer asks you to pay cryptocurrency to keep working.",
+      "heading": "THE JOB",
+      "visual": "phone",
+      "items": [
+        "Easy remote task",
+        "Pay to continue?"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI describes fake remote jobs advertised through unsolicited calls or messages, sometimes posing as staffing agencies.",
+      "heading": "THE OFFER",
+      "visual": "message",
+      "items": [
+        "Unsolicited offer",
+        "Recruiter persona"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Tasks may be framed as rating restaurants or 'optimizing' a service. The work sounds simple and repeatable.",
+      "heading": "THE TASK",
+      "visual": "profile",
+      "items": [
+        "Rate",
+        "Optimize",
+        "Repeat"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "A dashboard appears to show earnings. But according to the FBI, victims cannot actually cash them out.",
+      "heading": "FAKE BALANCE",
+      "visual": "receipt",
+      "items": [
+        "Displayed earnings",
+        "No withdrawal"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "To unlock more work or earn more, the site demands a crypto payment. That payment goes to the scammer.",
+      "heading": "THE PAYMENT",
+      "visual": "payment",
+      "items": [
+        "Unlock work",
+        "Send crypto"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The dashboard creates the feeling of progress. The payment demand reveals who the real customer is.",
+      "heading": "THE TURN",
+      "visual": "flow",
+      "items": [
+        "Fake earnings",
+        "Real payment"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Never pay a supposed employer to do a job. Save the messages and transaction details, then report the scheme at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "warning",
+      "items": [
+        "Never pay to work",
+        "Save evidence",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "FBI IC3 PSA dated 4 June 2024 documents unsolicited fake task jobs, restaurant ratings or optimization, crypto payments to unlock work, and fake unwithdrawable earnings.",
+      "The scene is an illustrated composite of the documented pattern, not a named victim story."
+    ]
+  }
+}

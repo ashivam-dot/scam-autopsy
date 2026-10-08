@@ -1,0 +1,94 @@
+{
+  "id": "06-phantom-safe-account",
+  "title": "The 'Safe Account' That Was the Scam",
+  "hook": "A bank caller says your money is unsafe. Move it to a 'safe account.'",
+  "source_urls": [
+    "https://www.ic3.gov/PSA/2023/PSA230929",
+    "https://www.ic3.gov/PSA/2025/PSA251125"
+  ],
+  "description": "FBI IC3 Phantom Hacker advisory, 29 September 2023: tech-support impostors may hand victims to a fake financial-institution representative who orders funds moved to a supposed safe account. FBI account-takeover guidance: hang up and call the financial institution using a verified number. Sources: https://www.ic3.gov/PSA/2023/PSA230929 and https://www.ic3.gov/PSA/2025/PSA251125 . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "A 'bank' caller says your money is unsafe. Move it to a 'safe account.'",
+      "heading": "THE ORDER",
+      "visual": "phone",
+      "items": [
+        "Funds at risk",
+        "Move now"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI calls it the Phantom Hacker scam. It can begin with fake tech support.",
+      "heading": "FIRST ACT",
+      "visual": "warning",
+      "items": [
+        "Fake tech support",
+        "False hack"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The tech impostor may ask you to open financial accounts, revealing which balance is worth targeting.",
+      "heading": "ACCOUNT CHECK",
+      "visual": "profile",
+      "items": [
+        "Open account?",
+        "Balance exposed"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "A second impostor claims to be from your bank and demands an immediate transfer.",
+      "heading": "SECOND ACT",
+      "visual": "flow",
+      "items": [
+        "Tech support",
+        "Fake bank",
+        "Transfer"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The destination is described as a protected third-party account, sometimes falsely linked to a government agency.",
+      "heading": "THE TRAP",
+      "visual": "payment",
+      "items": [
+        "'Safe' account",
+        "Outside bank"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI says victims may be told to keep the real reason secret. That secrecy blocks independent checks.",
+      "heading": "THE TURN",
+      "visual": "message",
+      "items": [
+        "Do not tell anyone"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Hang up and call your bank using a number you found independently. If you transferred funds, contact your bank immediately and report the incident at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "phone",
+      "items": [
+        "Hang up",
+        "Call real bank",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "FBI IC3 29 September 2023 Phantom Hacker advisory documents the three personas, false virus scan, balance inspection, purported safe third-party account, and secrecy request.",
+      "FBI IC3 25 November 2025 account-takeover advisory supports hanging up, dialing a verified financial-institution number, and prompt bank/IC3 reporting.",
+      "Illustrated interface and caller are not represented as a real recording."
+    ]
+  }
+}

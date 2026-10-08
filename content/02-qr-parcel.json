@@ -1,0 +1,92 @@
+{
+  "id": "02-qr-parcel",
+  "title": "The QR Code on a Package You Never Ordered",
+  "hook": "A package you never ordered arrives with a QR code.",
+  "source_urls": [
+    "https://www.ic3.gov/PSA/2025/PSA250731"
+  ],
+  "description": "FBI IC3 warning, 31 July 2025: unsolicited packages can carry QR codes that lead to requests for personal or financial information or malicious downloads. The FBI says this variation is not as widespread as other fraud schemes. Source: https://www.ic3.gov/PSA/2025/PSA250731 . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "A package you never ordered arrives with a QR code. Would you scan it to find the sender?",
+      "heading": "UNORDERED",
+      "visual": "receipt",
+      "items": [
+        "No order",
+        "No sender"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI warned in 2025 that criminals have used unsolicited packages to lure people into scanning codes.",
+      "heading": "THE LURE",
+      "visual": "warning",
+      "items": [
+        "Unsolicited parcel",
+        "QR code"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Some packages omit sender information, making the mystery itself the reason to reach for your phone.",
+      "heading": "CURIOSITY",
+      "visual": "phone",
+      "items": [
+        "Who sent this?"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The code can lead to a request for personal or financial information, or a malicious download that steals phone data.",
+      "heading": "THE LINK",
+      "visual": "flow",
+      "items": [
+        "Scan",
+        "Fake page or download",
+        "Data at risk"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "It resembles a brushing scam, but the FBI says this QR variation is less widespread than other schemes.",
+      "heading": "THE PATTERN",
+      "visual": "profile",
+      "items": [
+        "Brushing variation",
+        "FBI warning"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "A printed code is still an unknown link. Packaging does not make the destination trustworthy.",
+      "heading": "THE TURN",
+      "visual": "warning",
+      "items": [
+        "Printed ≠ safe"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Do not scan codes from unknown packages. If you already shared details, secure affected accounts and report the activity at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "phone",
+      "items": [
+        "Do not scan",
+        "Secure accounts",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "FBI IC3 PSA dated 31 July 2025 describes unsolicited packages without sender information, QR links seeking information or malicious downloads, and relation to brushing scams.",
+      "The PSA explicitly says this variation is not as widespread as other fraud schemes.",
+      "No particular delivered package or data theft outcome is represented as a real incident."
+    ]
+  }
+}

@@ -1,0 +1,253 @@
+"""Behavioral checks for the cloud research gate; no live API calls."""
+
+from __future__ import annotations
+
+import copy
+import json
+import tempfile
+import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
+
+from scam_autopsy import research
+
+
+URL = "https://consumer.ftc.gov/consumer-alerts/2026/09/fake-tractor-listing"
+OTHER_URL = "https://consumer.ftc.gov/consumer-alerts/2026/09/fake-equipment-payment"
+QUOTE = "Scammers send an invoice and ask for a wire transfer before the equipment arrives."
+SOURCE = ("The FTC describes fake farm equipment listings. " + QUOTE + " "
+          "Search for the business independently and call a number you find yourself. " * 5)
+NARRATION = "A fake equipment listing can look convincing, so check the seller independently before sending money by wire."
+
+
+def script(url: str = URL) -> dict:
+    headings = ("THE LISTING", "THE SELLER", "THE INVOICE", "THE WIRE",
+                "THE PAUSE", "THE CHECK", "THE SOURCE")
+    adjectives = ("fake", "phony", "bogus", "deceptive", "fraudulent", "invented", "false")
+    visuals = ("phone", "profile", "payment", "flow", "warning", "receipt", "cards")
+    return {
+        "id": "draft", "title": "The fake equipment listing", "hook": "The invoice arrives before the tractor",
+        "source_urls": [url], "description": f"FTC-documented pattern. Source: {url}",
+        "format": "short", "scenes": [
+            {"narration": NARRATION.replace("fake", adjective), "heading": heading, "visual": visual,
+             "items": ["Find the real number", "Call before paying"], "label": "Illustration",
+             "evidence_quote": QUOTE} for heading, adjective, visual in zip(headings, adjectives, visuals)
+        ],
+    }
+
+
+def review() -> dict:
+    return {"factual_fidelity": True, "practical_advice": True, "quality": True,
+            "diversity": True, "no_invented_incidents": True, "notes": "The mechanism and action match the source."}
+
+
+class SourceValidationTests(unittest.TestCase):
+    def test_rejects_ssrf_credentials_ip_and_lookalike_hosts(self):
+        bad = [
+            "http://consumer.ftc.gov/consumer-alerts/2026/09/fake-tractor-listing",
+            "https://user:secret@consumer.ftc.gov/consumer-alerts/2026/09/fake-tractor-listing",
+            "https://127.0.0.1/consumer-alerts/2026/09/fake-tractor-listing",
+            "https://consumer.ftc.gov.evil.test/consumer-alerts/2026/09/fake-tractor-listing",
+            "https://consumer.ftc.gov:444/consumer-alerts/2026/09/fake-tractor-listing",
+            "https://consumer.ftc.gov/%2e%2e/secret",
+            "https://consumer.ftc.gov//internal",
+            "https://consumer.ftc.gov/consumer-alerts/2026/09/a?url=https://127.0.0.1",
+            "https://consumer.ftc.gov/consumer-alerts/2026/09/a#fragment",
+            "https://consumer.ftc.gov:invalid/consumer-alerts/2026/09/a",
+        ]
+        for url in bad:
+            with self.subTest(url=url), self.assertRaises(research.ResearchError):
+                research.canonical_source_url(url)
+        self.assertEqual(research.canonical_source_url(URL), URL)
+
+    def test_extracts_only_visible_article_body(self):
+        html = ("<html><script>UNTRUSTED SCRIPT</script><main><article class='node--view-mode-cfg-default'>"
+                "<div class='field--name-body'><p>" + (QUOTE + " ") * 5 +
+                "</p><script>HIDDEN CLAIM</script></div></article></main></html>").encode()
+        text = research.extract_article(html)
+        self.assertIn(QUOTE, text)
+        self.assertNotIn("UNTRUSTED SCRIPT", text)
+        self.assertNotIn("HIDDEN CLAIM", text)
+
+    def test_quote_and_numeric_claim_must_match_source(self):
+        valid = script()
+        self.assertEqual(research.validate_script(valid, URL, SOURCE), valid)
+        absent = copy.deepcopy(valid)
+        absent["scenes"][0]["evidence_quote"] = "Scammers always steal your tractor."
+        with self.assertRaisesRegex(research.ResearchError, "evidence quote absent"):
+            research.validate_script(absent, URL, SOURCE)
+        number = copy.deepcopy(valid)
+        number["scenes"][0]["narration"] += " They demand $8,000."
+        with self.assertRaisesRegex(research.ResearchError, "numeric claim"):
+            research.validate_script(number, URL, SOURCE)
+        metadata = copy.deepcopy(valid)
+        metadata["title"] += " $8,000"
+        with self.assertRaisesRegex(research.ResearchError, "metadata numeric"):
+            research.validate_script(metadata, URL, SOURCE)
+
+    def test_numeric_support_preserves_currency_scale_and_percent(self):
+        self.assertNotEqual(research._numbers("$1 million"), research._numbers("$1"))
+        self.assertNotEqual(research._numbers("$1"), research._numbers("£1"))
+        self.assertNotEqual(research._numbers("1%"), research._numbers("1"))
+        self.assertEqual(research._numbers("$1,000"), research._numbers("$1000"))
+        case = script()
+        case["scenes"][0]["evidence_quote"] = "The loss was $1 million."
+        case["scenes"][0]["narration"] += " It cost $1."
+        with self.assertRaisesRegex(research.ResearchError, "numeric claim"):
+            research.validate_script(case, URL, SOURCE + " The loss was $1 million.")
+
+    def test_escaped_rss_link_is_ignored_in_favor_of_title_anchor(self):
+        feed = (f"<rss><channel><item><title><a href='{URL}'>Fake tractor scam</a></title>"
+                "<link>https://consumer.ftc.gov/%3Cbad-link%3E</link>"
+                "<description>Scammers impersonate sellers.</description></item></channel></rss>").encode()
+        with patch.object(research, "_get_public", return_value=feed):
+            self.assertEqual(research.discover_articles(Mock()), [(URL, "Fake tractor scam")])
+
+    def test_redirect_to_private_address_is_rejected_before_connecting(self):
+        response = Mock(status_code=302, headers={"Location": "https://127.0.0.1/internal"})
+        session = Mock()
+        session.get.return_value = response
+        with self.assertRaisesRegex(research.ResearchError, "unsafe source URL"):
+            research._get_public(session, URL)
+        self.assertEqual(session.get.call_count, 1)
+        response.close.assert_called_once()
+
+
+class ResearchRunTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.content = self.root / "content"
+        self.content.mkdir()
+        self.state = self.root / "state" / "research.json"
+
+    def run_it(self, limit=2):
+        return research.run_research(limit, content_dir=self.content, state_file=self.state,
+                                     session=Mock(), key="test-key")
+
+    def test_dedupes_existing_content_source_before_generation(self):
+        (self.content / "existing.json").write_text(json.dumps({"id": "seed", "source_urls": [URL]}))
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Old scam"), (OTHER_URL, "New scam")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(OTHER_URL), review()]) as generate:
+            paths = self.run_it()
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(generate.call_count, 2)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [OTHER_URL])
+        self.assertTrue(json.loads(paths[0].read_text())["approved"])
+        self.assertEqual(json.loads(self.state.read_text())["status"], "passed")
+
+    def test_dedupes_source_hash_from_prior_state(self):
+        import hashlib
+        digest = hashlib.sha256(SOURCE.encode()).hexdigest()
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({"used_source_hashes": [digest]}))
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "New scam")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json") as generate:
+            self.assertEqual(self.run_it(), [])
+        generate.assert_not_called()
+        self.assertEqual(json.loads(self.state.read_text())["status"], "no_new_script")
+
+    def test_missing_distinct_supported_models_fails_closed(self):
+        with patch.object(research, "_model_names", side_effect=research.ResearchError("two configured free-tier Gemini models are unavailable")), \
+             patch.object(research, "discover_articles") as discover:
+            self.assertEqual(self.run_it(), [])
+        discover.assert_not_called()
+        self.assertEqual(list(self.content.glob("*.json")), [])
+        self.assertEqual(json.loads(self.state.read_text())["status"], "failed")
+
+    def test_missing_key_fails_before_any_network_call(self):
+        session = Mock()
+        self.assertEqual(research.run_research(content_dir=self.content, state_file=self.state,
+                                               session=session, key=""), [])
+        session.get.assert_not_called()
+        session.post.assert_not_called()
+        self.assertEqual(json.loads(self.state.read_text())["status"], "failed")
+
+    def test_corrupt_state_fails_closed_before_generation(self):
+        self.state.parent.mkdir()
+        self.state.write_text("{broken")
+        with patch.object(research, "_model_names") as models:
+            self.assertEqual(self.run_it(), [])
+        models.assert_not_called()
+        self.assertEqual(json.loads(self.state.read_text())["status"], "failed")
+
+    def test_failed_second_review_preserves_first_approved_script(self):
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one"), (OTHER_URL, "Scam two")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", side_effect=[SOURCE + " " + URL,
+                                                                  SOURCE + " " + OTHER_URL]), \
+             patch.object(research, "_gemini_json", side_effect=[script(URL), review(), script(OTHER_URL),
+                                                                   {**review(), "factual_fidelity": False}]):
+            paths = self.run_it()
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [URL])
+        result = json.loads(self.state.read_text())
+        self.assertEqual(result["status"], "partial_success")
+        self.assertEqual(result["rejected"][0]["source_url"], OTHER_URL)
+        self.assertIn("factual_fidelity", result["rejected"][0]["reason"])
+
+    def test_writer_rejection_tries_next_source_with_remaining_budget(self):
+        first = script(URL)
+        first["scenes"][0]["evidence_quote"] = "invented quote"
+        generated = iter((first, script(OTHER_URL), review()))
+
+        def generate(*args):
+            budget = args[4]
+            budget[0] += 1
+            return next(generated)
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one"), (OTHER_URL, "Scam two")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", side_effect=[SOURCE + URL, SOURCE + OTHER_URL]), \
+             patch.object(research, "_gemini_json", side_effect=generate) as model:
+            paths = self.run_it()
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(model.call_count, 3)
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["generation_calls"], 3)
+        self.assertEqual(state["status"], "partial_success")
+        self.assertIn("writer validation", state["rejected"][0]["reason"])
+
+    def test_429_retries_once_with_bounded_budget(self):
+        response = Mock(status_code=429)
+        session = Mock()
+        session.post.return_value = response
+        budget = [0]
+        with patch.object(research.time, "sleep") as sleep:
+            with self.assertRaisesRegex(research.ResearchError, "quota exhausted"):
+                research._gemini_json(session, "test-key", "gemini-2.5-flash", "test", budget, 0.1)
+        self.assertEqual(session.post.call_count, 2)
+        self.assertEqual(budget[0], 2)
+        sleep.assert_called_once_with(2)
+
+    def test_flash_writer_disables_thinking_for_token_budget(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"candidates": [{"finishReason": "STOP",
+                                                      "content": {"parts": [{"text": "{}"}]}}]}
+        session = Mock()
+        session.post.return_value = response
+        research._gemini_json(session, "test-key", "gemini-2.5-flash", "test", [0], 0.6)
+        self.assertEqual(session.post.call_args.kwargs["json"]["generationConfig"]["thinkingConfig"],
+                         {"thinkingBudget": 0})
+
+    def test_only_configured_supported_models_can_be_selected(self):
+        session = Mock()
+        session.get.return_value.json.return_value = {"models": [
+            {"name": "models/gemini-2.5-flash", "supportedGenerationMethods": ["generateContent"]},
+            {"name": "models/gemini-paid-only", "supportedGenerationMethods": ["generateContent"]},
+        ]}
+        with self.assertRaisesRegex(research.ResearchError, "unavailable"):
+            research._model_names(session, "test-key")
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,0 +1,93 @@
+{
+  "id": "04-jury-gift-card",
+  "title": "The Missed Jury Duty Call That Demands Gift Cards",
+  "hook": "A caller says you missed jury duty. Then comes a demand for prepaid cards.",
+  "source_urls": [
+    "https://www.ic3.gov/PSA/2026/PSA260917",
+    "https://www.ic3.gov/PSA/2023/PSA230929"
+  ],
+  "description": "FBI IC3 warning, 17 September 2026: government impostors use missed jury duty and warrant threats and demand payments including prepaid cards. FBI guidance says officials will not call or text to demand payment. Sources: https://www.ic3.gov/PSA/2026/PSA260917 and https://www.ic3.gov/PSA/2023/PSA230929 . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "A caller says you missed jury duty. Pay a fine now or face arrest.",
+      "heading": "THE THREAT",
+      "visual": "phone",
+      "items": [
+        "Missed jury duty",
+        "Pay now?"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI documented this government-impersonation pretext in a 2026 warning.",
+      "heading": "THE PRETEXT",
+      "visual": "warning",
+      "items": [
+        "FBI-documented pattern"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Caller ID can be spoofed. The caller may sound urgent and keep you on the line.",
+      "heading": "THE PERFORMANCE",
+      "visual": "profile",
+      "items": [
+        "Spoofed caller ID",
+        "Urgency"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The payment demand may be for prepaid cards. An FBI advisory also identifies gift cards as a method government impostors request.",
+      "heading": "THE DEMAND",
+      "visual": "payment",
+      "items": [
+        "Prepaid cards",
+        "Gift cards"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The urgency is deliberate: it keeps you from checking whether the caller has any authority at all.",
+      "heading": "THE TURN",
+      "visual": "flow",
+      "items": [
+        "Threat",
+        "Rush",
+        "Payment"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI says law enforcement and government officials will never call or text demanding payment this way.",
+      "heading": "THE FACT",
+      "visual": "warning",
+      "items": [
+        "Official agencies do not demand cards"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Hang up. Find the court or agency's number yourself and verify independently. If you paid, contact your financial institution and report it at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "phone",
+      "items": [
+        "Hang up",
+        "Verify independently",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "FBI IC3 17 September 2026 PSA documents missed-jury-duty threats, caller spoofing, prepaid-card demands, and official independent verification guidance.",
+      "FBI IC3 2023 Phantom Hacker PSA explicitly includes gift/prepaid cards as an imposter payment method.",
+      "No actual caller, court, card brand, loss amount, or quote is presented as a documented incident."
+    ]
+  }
+}

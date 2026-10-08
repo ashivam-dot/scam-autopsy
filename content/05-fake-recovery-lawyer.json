@@ -1,0 +1,93 @@
+{
+  "id": "05-fake-recovery-lawyer",
+  "title": "The Lawyer Who Promised to Recover Scam Money",
+  "hook": "You lost money once. Then a lawyer offers to get it back—for a fee.",
+  "source_urls": [
+    "https://www.ic3.gov/PSA/2025/PSA250813",
+    "https://www.ic3.gov/PSA/2025/PSA250418"
+  ],
+  "description": "FBI IC3 warning, 13 August 2025: fictitious law firms target prior cryptocurrency-scam victims, may know exact prior transfer details, impersonate real lawyers and government partners, and request crypto or gift-card payment. Source: https://www.ic3.gov/PSA/2025/PSA250813 . IC3 impersonation guidance: https://www.ic3.gov/PSA/2025/PSA250418 . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "After a scam loss, a 'recovery lawyer' promises to get your money back for a fee.",
+      "heading": "SECOND CONTACT",
+      "visual": "message",
+      "items": [
+        "Lost funds",
+        "Recovery offer"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI says fictitious law firms target cryptocurrency scam victims when hope is highest.",
+      "heading": "THE TARGET",
+      "visual": "profile",
+      "items": [
+        "Prior victim",
+        "Urgent hope"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The impostor may use a real lawyer's name, copied letterhead, and your old transfer details.",
+      "heading": "THE PROOF",
+      "visual": "receipt",
+      "items": [
+        "Real-looking name",
+        "Exact old details"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Those details feel convincing. They do not prove anyone can recover your money.",
+      "heading": "THE TURN",
+      "visual": "flow",
+      "items": [
+        "Private details",
+        "False authority"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "They may request crypto or prepaid gift cards, sometimes claiming a government connection.",
+      "heading": "THE FEE",
+      "visual": "payment",
+      "items": [
+        "Crypto",
+        "Gift cards"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI says no law firm is an officially authorized partner of a US government agency for this purpose.",
+      "heading": "THE CLAIM",
+      "visual": "warning",
+      "items": [
+        "Check claimed authority"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Verify the lawyer through an independently found licensing record and call the firm using its official number. Report suspicious recovery offers at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "phone",
+      "items": [
+        "Verify license",
+        "Call official number",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "FBI IC3 13 August 2025 advisory supports lawyer impersonation, copied letterhead, exact earlier transfer details, payment in crypto or gift cards, and false government partnership claims.",
+      "FBI 18 April 2025 advisory also warns of scammers claiming funds were recovered.",
+      "This portrays a documented pattern using illustrated characters, not a specific named victim."
+    ]
+  }
+}

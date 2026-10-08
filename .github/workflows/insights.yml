@@ -1,0 +1,56 @@
+name: Analytics and source research
+on:
+  schedule:
+    - cron: '15 8 * * *'
+  workflow_dispatch:
+    inputs:
+      force_refill:
+        description: 'Also exercise bounded source research now'
+        type: boolean
+        default: false
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: scam-autopsy-state
+  cancel-in-progress: false
+jobs:
+  insights:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: '3.12'
+      - name: Install lightweight research dependencies
+        run: uv pip install --system google-api-python-client google-auth requests beautifulsoup4
+      - name: Record analytics and evidence-limited growth decisions
+        run: python -m scam_autopsy.cli stats
+      - name: Refill researched scripts once a week
+        env:
+          FORCE_REFILL: ${{ inputs.force_refill }}
+        run: |
+          if [ "$(date -u +%u)" = '1' ] || [ "$FORCE_REFILL" = 'true' ]; then
+            python -m scam_autopsy.research --limit 2
+          fi
+      - name: Save cloud state
+        if: always()
+        run: |
+          git config user.name 'Scam Autopsy studio'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add content state reports
+          if ! git diff --cached --quiet; then
+            git commit -m 'Update channel insights and reviewed source queue'
+            git push origin HEAD:main
+          fi
+      - name: Alert on a failed run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue create --title 'Channel insights require attention' --body "Run https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"

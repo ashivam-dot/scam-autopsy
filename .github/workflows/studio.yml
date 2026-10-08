@@ -1,0 +1,84 @@
+name: Scam Autopsy cloud studio
+on:
+  schedule:
+    - cron: '30 17 * * 2,6'
+  workflow_dispatch:
+    inputs:
+      case_id:
+        description: 'Optional reviewed case ID; blank selects queue head'
+        required: false
+        default: ''
+      visibility:
+        description: 'Public publication or private quality preview'
+        type: choice
+        options: [private, public]
+        default: private
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: scam-autopsy-state
+  cancel-in-progress: false
+jobs:
+  studio:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}
+      HF_HUB_DISABLE_TELEMETRY: '1'
+      TOKENIZERS_PARALLELISM: 'false'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Configure cloud state commits
+        run: |
+          git config user.name 'Scam Autopsy studio'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          python-version: '3.12'
+      - name: Install open-source media tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y ffmpeg espeak-ng fonts-dejavu-core libsndfile1
+          uv sync --locked --extra test
+      - name: Verify software and source-reviewed queue
+        run: uv run pytest -q
+      - name: Reserve one reviewed case
+        id: reserve
+        env:
+          REQUESTED_CASE: ${{ inputs.case_id }}
+        run: uv run python -m scam_autopsy.cli reserve ${REQUESTED_CASE:+--case "$REQUESTED_CASE"}
+      - name: Render narration and original animation
+        if: steps.reserve.outputs.case != ''
+        env:
+          CASE_PATH: ${{ steps.reserve.outputs.path }}
+        run: uv run python -m scam_autopsy.render "$CASE_PATH" --output build/episode.mp4
+      - name: Upload, verify processing, and publish to pinned channel
+        if: steps.reserve.outputs.case != ''
+        env:
+          CASE_PATH: ${{ steps.reserve.outputs.path }}
+          VISIBILITY: ${{ inputs.visibility }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          if [ "$EVENT_NAME" = 'schedule' ] || [ "$VISIBILITY" = 'public' ]; then
+            uv run python -m scam_autopsy.cli publish "$CASE_PATH" build/episode.mp4
+          else
+            uv run python -m scam_autopsy.cli publish "$CASE_PATH" build/episode.mp4 --private
+          fi
+      - name: Preserve media and quality receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scam-autopsy-${{ github.run_id }}
+          path: build/
+          retention-days: 14
+          if-no-files-found: ignore
+      - name: Alert on a failed run
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue create --title 'Cloud studio requires attention' --body "Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}. The reserved case will reconcile before another upload. No token or private credential is attached."
