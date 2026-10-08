@@ -12,6 +12,7 @@ from google.oauth2.credentials import Credentials
 from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from googleapiclient.errors import HttpError
 
 CHANNEL_ID = "UCz0W-lSVvEeWYufkUVaVUKA"
 SOURCE_HOSTS = {"www.ic3.gov", "ic3.gov", "www.fbi.gov", "fbi.gov", "consumer.ftc.gov", "www.ftc.gov", "ftc.gov", "www.cisa.gov", "cisa.gov"}
@@ -135,20 +136,28 @@ def file_in_playlist(api, video_id):
     if video["snippet"]["channelId"] != CHANNEL_ID or video["status"]["privacyStatus"] != "public":
         raise RuntimeError("Only this channel's public videos enter the sourced playlist")
     title = "Scam Autopsy | Sourced Investigations"
-    rows = api.playlists().list(part="snippet", mine=True, maxResults=50).execute().get("items", [])
+    rows = api.playlists().list(part="snippet,contentDetails", mine=True, maxResults=50).execute().get("items", [])
     found = [r for r in rows if r["snippet"]["title"] == title and r["snippet"]["channelId"] == CHANNEL_ID]
     if len(found) > 1:
         raise RuntimeError("Multiple sourced playlists require reconciliation")
     if found:
         playlist_id = found[0]["id"]
+        known_empty = found[0].get("contentDetails", {}).get("itemCount") == 0
     else:
         result = api.playlists().insert(part="snippet,status", body={"snippet": {"title": title, "description": "Original investigations with primary sources in each video description. Recreated visuals are illustrations."}, "status": {"privacyStatus": "public"}}).execute()
         playlist_id = result["id"]
+        known_empty = True
     token = None
     while True:
         params = {"part": "contentDetails", "playlistId": playlist_id, "maxResults": 50}
         if token: params["pageToken"] = token
-        page = api.playlistItems().list(**params).execute()
+        try:
+            page = api.playlistItems().list(**params).execute()
+        except HttpError as exc:
+            # A newly created, empty owner playlist can lag the items endpoint.
+            if exc.resp.status != 404 or not known_empty:
+                raise
+            page = {"items": []}
         if any(r["contentDetails"]["videoId"] == video_id for r in page.get("items", [])):
             return playlist_id
         token = page.get("nextPageToken")

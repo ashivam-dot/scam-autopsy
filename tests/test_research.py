@@ -96,6 +96,34 @@ class SourceValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(research.ResearchError, "numeric claim"):
             research.validate_script(case, URL, SOURCE + " The loss was $1 million.")
 
+    def test_source_backed_95_word_short_passes_but_outside_90_to_125_fails(self):
+        narrations = [
+            "A fake tractor listing appears and invites a buyer to contact the seller.",
+            "The seller sends an invoice and asks for a wire before the tractor arrives.",
+            "That transfer request is the dangerous turn because a convincing listing is not proof.",
+            "The FTC says scammers use equipment listings and request payment before any delivery.",
+            "Before paying, find the business yourself and call a number from an independent source.",
+            "Do not trust the invoice when the listing is the thing you are checking.",
+            "Pause the payment until you have verified the seller through your own search.",
+        ]
+        advice_quote = "Search for the business independently and call a number you find yourself."
+        candidate = script()
+        for index, scene in enumerate(candidate["scenes"]):
+            scene["narration"] = narrations[index]
+            scene["evidence_quote"] = advice_quote if index in (4, 6) else QUOTE
+        self.assertEqual(len(research.WORD.findall(" ".join(narrations))), 95)
+        self.assertEqual(research.validate_script(candidate, URL, SOURCE), candidate)
+
+        too_short = copy.deepcopy(candidate)
+        too_short["scenes"][0]["narration"] = "A fake listing appears."
+        with self.assertRaisesRegex(research.ResearchError, "outside 90-125"):
+            research.validate_script(too_short, URL, SOURCE)
+
+        too_long = copy.deepcopy(candidate)
+        too_long["scenes"][0]["narration"] += " Check the real seller before paying. " * 6
+        with self.assertRaisesRegex(research.ResearchError, "outside 90-125"):
+            research.validate_script(too_long, URL, SOURCE)
+
     def test_escaped_rss_link_is_ignored_in_favor_of_title_anchor(self):
         feed = (f"<rss><channel><item><title><a href='{URL}'>Fake tractor scam</a></title>"
                 "<link>https://consumer.ftc.gov/%3Cbad-link%3E</link>"

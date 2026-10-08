@@ -216,7 +216,7 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
 
 def _writer_prompt(url: str, title: str, source: str) -> str:
     return f"""Create ONE original evergreen English YouTube Short about the documented scam pattern in this FTC article.
-Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote. Total narration 108–125 spoken words, designed for 35–55 seconds. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. No invented victims, names, losses, screenshots, outcomes, or quoted messages. Label every fictional UI or reenactment Illustration; label a factual source card SOURCE: FTC. Every scene's evidence_quote must be a short EXACT contiguous passage from the visible FTC article below supporting that scene's factual claims. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in that scene's evidence_quote. Avoid time-sensitive advice and unverifiable superlatives. Description includes the source URL and says FTC-documented pattern.
+Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. No invented victims, names, losses, screenshots, outcomes, or quoted messages. Label every fictional UI or reenactment Illustration; label a factual source card SOURCE: FTC. Every scene's evidence_quote must be a short EXACT contiguous passage from the visible FTC article below supporting that scene's factual claims. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in that scene's evidence_quote. Avoid time-sensitive advice and unverifiable superlatives. Description includes the source URL and says FTC-documented pattern.
 
 FTC article title: {title}
 FTC source URL: {url}
@@ -288,8 +288,8 @@ def validate_script(case: dict[str, Any], url: str, source: str) -> dict[str, An
             len({scene["visual"] for scene in scenes}) < 3):
         raise ResearchError("scenes lack distinct writing and visuals")
     count = len(WORD.findall(" ".join(narration)))
-    if not 108 <= count <= 125:
-        raise ResearchError(f"narration word count {count} outside 108-125")
+    if not 90 <= count <= 125:
+        raise ResearchError(f"narration word count {count} outside 90-125")
     metadata = " ".join(case[k] for k in ("title", "hook", "description"))
     metadata = metadata.replace(url, "")
     if not _numbers(metadata).issubset(_numbers(source)):

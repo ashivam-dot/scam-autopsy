@@ -2,6 +2,8 @@ import copy
 import json
 from pathlib import Path
 from unittest.mock import MagicMock
+from httplib2 import Response
+from googleapiclient.errors import HttpError
 import pytest
 from scam_autopsy import youtube
 
@@ -64,3 +66,13 @@ def test_existing_playlist_entry_is_not_inserted_again():
     api.playlistItems.return_value.list.return_value.execute.return_value = {"items": [{"contentDetails": {"videoId": "video"}}]}
     assert youtube.file_in_playlist(api, "video") == "playlist"
     api.playlistItems.return_value.insert.assert_not_called()
+
+
+def test_known_empty_owner_playlist_can_accept_its_first_public_video():
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [{"snippet": {"channelId": youtube.CHANNEL_ID}, "status": {"privacyStatus": "public"}}]}
+    api.playlists.return_value.list.return_value.execute.return_value = {"items": [{"id": "playlist", "snippet": {"channelId": youtube.CHANNEL_ID, "title": "Scam Autopsy | Sourced Investigations"}, "contentDetails": {"itemCount": 0}}]}
+    api.playlistItems.return_value.list.return_value.execute.side_effect = HttpError(Response({"status": "404"}), b'{"error":{"message":"playlist not indexed yet"}}')
+    assert youtube.file_in_playlist(api, "video") == "playlist"
+    assert api.playlistItems.return_value.insert.call_args.kwargs["body"]["snippet"]["resourceId"]["videoId"] == "video"
