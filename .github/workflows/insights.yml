@@ -58,7 +58,7 @@ jobs:
           git add content state reports
           if ! git diff --cached --quiet; then
             git commit -m 'Update channel insights and reviewed source queue'
-            git push origin HEAD:main
+            python -m scam_autopsy.state_push
           fi
       - name: Verify queue and cloud receipts
         if: always()
@@ -70,7 +70,7 @@ jobs:
             git add state/health.json
             if ! git diff --cached --quiet; then
               git commit -m 'Record cloud health verification'
-              git push origin HEAD:main
+              python -m scam_autopsy.state_push
             fi
           fi
       - name: Alert on a failed run

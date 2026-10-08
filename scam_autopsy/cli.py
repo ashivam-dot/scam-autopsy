@@ -8,6 +8,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from . import youtube
+from .state_push import push_state
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER = ROOT / "state/publishing.json"
@@ -39,7 +40,7 @@ def durable_save(state, message):
         changed = subprocess.run(["git", "diff", "--cached", "--quiet"], cwd=ROOT).returncode
         if changed:
             subprocess.run(["git", "commit", "-m", message], cwd=ROOT, check=True)
-            subprocess.run(["git", "push", "origin", "HEAD:main"], cwd=ROOT, check=True)
+            push_state(ROOT)
 
 
 def reserve(case_id=None, *, private=False, public_confirmed=False):
