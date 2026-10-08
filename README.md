@@ -2,6 +2,8 @@
 
 Original, primary-source-backed explanations of scams on [@ScamAutopsyTV](https://www.youtube.com/@ScamAutopsyTV). The operating target is to build a trusted, returning audience and eventually a large channel; no subscriber or income outcome is promised.
 
+The channel was relaunched on 8 October 2026 with updated branding and [How an Email Redirected a $449K+ House Payment](https://www.youtube.com/watch?v=cgnDylK2Xm8), produced and published by the cloud studio. Eight earlier fictional dramatizations and their old playlist were preserved as unlisted.
+
 The studio runs on GitHub-hosted Linux runners. This Mac is a development copy, not a server. Python, Pillow, FFmpeg and the Apache-licensed Kokoro-82M model produce original illustrations, timed captions and narration without a paid rendering or voice API. Bounded research uses the owner's existing Gemini free-tier project, at most four generation requests per run. Model and project availability are checked; failures stop new content rather than inventing a substitute. Quota is shared with the owner's existing project. No paid API or platform billing was enabled for this project.
 
 ## Operating schedule

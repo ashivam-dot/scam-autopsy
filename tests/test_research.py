@@ -262,10 +262,10 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate):
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"])
         created = json.loads(paths[0].read_text())
         self.assertEqual(created["review"]["writer"], "gemini-3.6-flash")
-        self.assertEqual(created["review"]["reviewer"], "gemini-3.8-flash")
+        self.assertEqual(created["review"]["reviewer"], "gemini-3.5-flash")
         state = json.loads(self.state.read_text())
         self.assertEqual(state["generation_calls"], 3)
         from datetime import datetime, timezone
@@ -290,7 +290,7 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "extract_article", return_value=SOURCE), \
              patch.object(research, "_gemini_json", side_effect=generate):
             self.assertEqual(len(self.run_it(limit=1)), 1)
-        self.assertEqual(models, ["gemini-3.6-flash", "gemini-3.8-flash"])
+        self.assertEqual(models, ["gemini-3.6-flash", "gemini-3.5-flash"])
 
     def test_404_response_is_not_retried_on_same_model(self):
         session = Mock()
@@ -336,7 +336,7 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research.time, "sleep") as sleep:
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"])
         sleep.assert_called_once_with(2)
         state = json.loads(self.state.read_text())
         self.assertEqual(state["generation_calls"], 3)
@@ -344,7 +344,7 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual([(a["model"], a["status"], a["detail"]) for a in state["generation_attempts"]],
                          [("gemini-3.7-flash", "transient", "writer: HTTP 503"),
                           ("gemini-3.6-flash", "success", "writer"),
-                          ("gemini-3.8-flash", "success", "reviewer")])
+                          ("gemini-3.5-flash", "success", "reviewer")])
 
     def test_total_transient_outage_records_sanitized_attempts_and_last_cause(self):
         statuses = iter((429, 503, 502))
@@ -366,8 +366,8 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["generation_attempts"], [
             {"model": "gemini-3.7-flash", "status": "transient", "detail": "writer: HTTP 429"},
             {"model": "gemini-3.6-flash", "status": "transient", "detail": "writer: HTTP 503"},
-            {"model": "gemini-3.8-flash", "status": "transient", "detail": "writer: HTTP 502"}])
-        self.assertIn("gemini-3.8-flash writer: HTTP 502", state["error"])
+            {"model": "gemini-3.5-flash", "status": "transient", "detail": "writer: HTTP 502"}])
+        self.assertIn("gemini-3.5-flash writer: HTTP 502", state["error"])
         sleep.assert_called_once_with(2)
 
     def test_request_exception_text_is_not_persisted(self):
@@ -377,6 +377,45 @@ class ResearchRunTests(unittest.TestCase):
         state = json.loads(self.state.read_text())
         self.assertEqual(state["error"], "HTTPError")
         self.assertNotIn("API_KEY_UNSAFE", json.dumps(state))
+
+    def test_recent_transient_models_move_behind_unfailed_free_models(self):
+        from datetime import datetime, timezone
+        self.state.parent.mkdir()
+        self.state.write_text(json.dumps({
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "generation_attempts": [
+                {"model": "gemini-3.7-flash", "status": "transient", "detail": "writer: HTTP 429"},
+                {"model": "gemini-3.6-flash", "status": "transient", "detail": "writer: HTTP 429"},
+                {"model": "gemini-3.8-flash", "status": "transient", "detail": "writer: HTTP 503"}],
+        }))
+        chosen = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            chosen.append(model)
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(chosen, ["gemini-3.5-flash", "gemini-3.5-flash-lite"])
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["model_order"][:3],
+                         ["gemini-3.5-flash", "gemini-3.5-flash-lite", "gemini-3.1-flash-lite"])
+        self.assertEqual(state["generation_calls"], 2)
+
+    def test_old_transient_models_return_to_normal_priority(self):
+        from datetime import datetime, timedelta, timezone
+        old = {"checked_at": (datetime.now(timezone.utc) - timedelta(hours=7)).isoformat(),
+               "generation_attempts": [{"model": "gemini-3.7-flash", "status": "transient",
+                                        "detail": "writer: HTTP 429"}]}
+        self.assertEqual(research._deprioritize_recent_transients(research.FREE_TIER_CANDIDATES,
+                                                                  old, datetime.now(timezone.utc)),
+                         research.FREE_TIER_CANDIDATES)
 
     def test_read_timeout_falls_back_within_global_call_budget(self):
         used_models = []
@@ -396,7 +435,7 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research.time, "sleep") as sleep:
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash"])
         self.assertEqual(json.loads(self.state.read_text())["generation_calls"], 3)
         sleep.assert_called_once_with(2)
 
@@ -456,6 +495,18 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(session.post.call_args.kwargs["json"]["generationConfig"]["thinkingConfig"],
                          {"thinkingLevel": "low"})
         self.assertEqual(session.post.call_args.kwargs["timeout"], (10, 90))
+
+    def test_flash_lite_uses_json_without_unverified_thinking_config(self):
+        response = Mock(status_code=200)
+        response.json.return_value = {"candidates": [{"finishReason": "STOP",
+                                                      "content": {"parts": [{"text": "{}"}]}}]}
+        session = Mock()
+        session.post.return_value = response
+        for model in ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite"):
+            research._gemini_json(session, "test-key", model, "test", [0], 0.1)
+            config = session.post.call_args.kwargs["json"]["generationConfig"]
+            self.assertEqual(config["responseMimeType"], "application/json")
+            self.assertNotIn("thinkingConfig", config)
 
     def test_only_configured_supported_models_can_be_selected(self):
         session = Mock()

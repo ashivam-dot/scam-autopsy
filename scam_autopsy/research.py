@@ -28,7 +28,8 @@ FEED_URL = "https://consumer.ftc.gov/blog/rss"
 MODELS_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 GENERATION_URL = "https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
 # Each model is listed with free input/output on Google's Gemini API pricing page.
-FREE_TIER_CANDIDATES = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash", "gemini-3.5-flash")
+FREE_TIER_CANDIDATES = ("gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash",
+                        "gemini-3.5-flash-lite", "gemini-3.1-flash-lite", "gemini-3.8-flash")
 MAX_GENERATION_CALLS = 4
 MAX_ARTICLE_FETCHES = 10
 MAX_BYTES = 1_000_000
@@ -168,14 +169,33 @@ def _model_names(session: requests.Session, key: str) -> tuple[str, ...]:
     return tuple(chosen)
 
 
+def _deprioritize_recent_transients(models: tuple[str, ...], prior_state: dict[str, Any],
+                                    checked: datetime) -> tuple[str, ...]:
+    """Use other free model quotas first after a recent 429/service outage."""
+    try:
+        previous = datetime.fromisoformat(prior_state.get("checked_at", ""))
+        if previous.tzinfo is None or not timedelta(0) <= checked - previous <= timedelta(hours=6):
+            return models
+    except (TypeError, ValueError):
+        return models
+    attempts = prior_state.get("generation_attempts", [])
+    if not isinstance(attempts, list):
+        return models
+    cooling = {attempt.get("model") for attempt in attempts if isinstance(attempt, dict) and
+               attempt.get("status") in ("transient", "read_timeout")}
+    return tuple(model for model in models if model not in cooling) + tuple(
+        model for model in models if model in cooling)
+
+
 def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
                  budget: list[int], temperature: float) -> dict[str, Any]:
     if model not in FREE_TIER_CANDIDATES:
         raise ResearchError("unconfigured Gemini model")
     payload = {"contents": [{"parts": [{"text": prompt}]}],
                "generationConfig": {"responseMimeType": "application/json", "temperature": temperature,
-                                    "maxOutputTokens": 6000,
-                                    "thinkingConfig": {"thinkingLevel": "low"}}}
+                                    "maxOutputTokens": 6000}}
+    if "flash-lite" not in model:
+        payload["generationConfig"]["thinkingConfig"] = {"thinkingLevel": "low"}
     if budget[0] >= MAX_GENERATION_CALLS:
         raise ResearchError("Gemini generation budget exhausted")
     budget[0] += 1
@@ -380,6 +400,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                                  "checked_at": datetime.now(timezone.utc).isoformat(),
                                  "generation_calls": 0})
         return []
+    prior_state = state
     state = {k: v for k, v in state.items() if k in ("used_source_urls", "used_source_hashes",
                                                     "model_unavailable_until")}
     checked = datetime.now(timezone.utc)
@@ -400,7 +421,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
         if not key:
             raise ResearchError("GEMINI_API_KEY is unavailable")
         used_urls, used_hashes, used_ids = _existing(content_dir, state)
-        models = _model_names(session, key)
+        models = _deprioritize_recent_transients(_model_names(session, key), prior_state, checked)
+        state["model_order"] = list(models)
         if len([model for model in models if model not in unavailable]) < 2:
             raise ResearchError("two configured free-tier Gemini models are unavailable")
         pending: list[tuple[Path, dict[str, Any], str, str]] = []
