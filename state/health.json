@@ -1,0 +1,25 @@
+{
+  "checked_at": "2026-10-08T17:58:44.788423+00:00",
+  "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
+  "status": "needs_attention",
+  "counts": {
+    "reviewed_stock": 6,
+    "ready_queue": 5,
+    "confirmed_public_cases": 1,
+    "private_previews": 1,
+    "active_reservations": 0,
+    "analytics_rows": 3,
+    "eligible_comparisons": 0
+  },
+  "last_pipeline_failure": {
+    "component": "research",
+    "at": "2026-10-08T17:58:33.566389+00:00",
+    "status": "failed"
+  },
+  "alerts": [
+    {
+      "code": "research_failed",
+      "detail": ""
+    }
+  ]
+}
