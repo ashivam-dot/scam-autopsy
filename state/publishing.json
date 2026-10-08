@@ -2,11 +2,12 @@
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
   "cases": {
     "01-house-wire": {
-      "status": "uploading",
+      "status": "processing",
       "reserved_at": "2026-10-08T17:42:38.350256+00:00",
       "path": "content/01-house-wire.json",
       "content_sha256": "c0fa66cfc3b6d6e76cc6fab61a6ddfac7227dbe1ea022ce6e065171106488f45",
-      "upload_started_at": "2026-10-08T17:43:23.564671+00:00"
+      "upload_started_at": "2026-10-08T17:43:23.564671+00:00",
+      "video_id": "uHNks3I6tM4"
     }
   }
 }
