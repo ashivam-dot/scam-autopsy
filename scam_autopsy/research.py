@@ -40,6 +40,8 @@ MAX_CITATION_SOURCE_CHARS = 14_000
 MAX_CITATION_PASSAGES = 48
 MAX_CITATION_CHARS = 500
 CITATION_OVERLAP = 100
+SOURCE_RUN_WORDS = 8
+MAX_SOURCE_READING_PERCENT = 30
 COOLDOWN_HOURS = 6
 MAX_SOURCE_COOLDOWNS = 40
 TIMEOUT = (5, 25)
@@ -412,9 +414,9 @@ def _writer_prompt(url: str, title: str, passages: tuple[str, ...]) -> str:
     return f"""Create ONE original evergreen English YouTube Short about the documented scam pattern in this FTC article.
 Return only a JSON object with id,title,hook,source_urls,description,format,scenes. Title at most 100 characters; description at most 500 characters. Exactly 7 scenes; each scene has narration,heading,visual,items,label,evidence_quote_id. Set evidence_quote_id to an INTEGER from the numbered source passages below. Do not write evidence_quote text; the server copies the selected passage verbatim. Aim for 105–115 total spoken narration words; 90–125 are acceptable for a 35–55 second Short. Keep each narration to about 13–16 words instead of long paragraphs. Use 1–3 short on-screen items and concise headings. Vary narrative rhythm and visual metaphors; visual can say phone, flow, payment, profile, receipt, warning, or cards. Show the mechanism, trust transfer, consequence, and practical independently verifiable protective action. Source URL must be exactly [{json.dumps(url)}]; format is short. Call it an FTC-documented pattern or warning, not a specific victim incident, unless the source directly documents one. Description includes the source URL and says FTC-documented pattern.
 
-The first scene must open with a concrete, spoken hook about the dangerous turn. Set hook to that exact opening text, and begin scenes[0].narration with hook verbatim. Do not use a generic warning as the hook. For EVERY scene, select ONE numbered passage that supports ALL factual clauses in its narration, heading, visual implication, and EVERY item. If one passage cannot support all the scene's claims, remove or simplify those claims. Never infer logos, spoofed websites, screenshots, technical methods, real victims, losses, outcomes, message wording, or adjectives like sophisticated unless the selected passage states them. Do not reproduce article prose in narration. Any numerical claim, including one spelled out in words, must appear in the selected passage.
+The first scene must open with a concrete, spoken hook about the dangerous turn. Set hook to that exact opening text, and begin scenes[0].narration with hook verbatim. Do not use a generic warning as the hook. Tell an original spoken story in your own words; do not recite or lightly rearrange article sentences. Across all narration, no more than 30% of spoken words may be part of exact source runs of eight or more consecutive words. A brief necessary phrase is fine. For EVERY scene, select ONE numbered passage that supports ALL factual clauses in its narration, heading, visual implication, and EVERY item. If one passage cannot support all the scene's claims, remove or simplify those claims. Never infer logos, spoofed websites, screenshots, technical methods, real victims, losses, outcomes, message wording, or adjectives like sophisticated unless the selected passage states them. Never invent set details such as an empty dealership lot or fake messages; avoid unsupported absolute adjectives such as perfect. Any numerical claim, including one spelled out in words, must appear in the selected passage.
 
-Preserve the source's exact scope and conditions. If the article says scammers stop answering OR give excuses, do not say they always cut off contact. If advice warns against a seller who says you can ONLY pay by wire, gift card, crypto, or payment app, do not turn it into a blanket ban on wires. Preserve "may," "typically," "usually," and all stated alternatives. Give advice only when the quote supports it. Label every fictional phone, profile, payment screen, invoice, or reenactment Illustration. Use SOURCE: FTC only for an explicit FTC source card showing sourced wording, never for a recreated interface or payment card. Avoid time-sensitive advice and unverifiable superlatives.
+Preserve the source's exact scope and conditions. If the article says scammers stop answering OR give excuses, do not say they always cut off contact. If advice warns against a seller who says you can ONLY pay by wire, gift card, crypto, or payment app, do not turn it into a blanket ban on wires. Preserve "may," "typically," "usually," and all stated alternatives. Give advice only when the quote supports it. Renderer visual contract: phone draws a fictional UNKNOWN CONTACT messaging UI using scene items as messages; choose it only when the source supports a messaging/contact mechanism. profile draws a generic avatar and LOOKS FAMILIAR? and displays only the first item; choose it only for an identity mechanism. payment draws a fictional PAYMENT REQUEST / HOLD TO VERIFY card; receipt draws an ILLUSTRATED DOCUMENT; flow draws 1–3 connected nodes; warning draws an icon and at most two items; cards draws abstract explanatory cards. For website or in-person contexts without interface evidence, prefer cards, flow, or warning. Label every fictional interface or reenactment Illustration, but that label never excuses unsupported claims or set details. Use SOURCE: FTC only for an explicit FTC source card showing sourced wording, never for a recreated interface or payment card. Avoid time-sensitive advice and unverifiable superlatives.
 
 FTC article title: {title}
 FTC source URL: {url}
@@ -423,9 +425,9 @@ Numbered exact passages from the visible FTC article (cite IDs only):
 
 
 def _reviewer_prompt(case: dict[str, Any], url: str, source: str) -> str:
-    return f"""Independently audit this proposed YouTube Short against the primary FTC article below. Return JSON only with boolean fields factual_fidelity, practical_advice, quality, diversity, no_invented_incidents, scene_evidence_complete, conditions_preserved, visual_disclosure, a short notes string, and first_failure_scene (integer 1–7 for a scene failure, otherwise null). Set each boolean false unless fully supported. Check EVERY claim in the hook, title, description, every scene narration and heading, every visual implication, and EVERY on-screen item. For scene_evidence_complete, compare EACH scene's own exact evidence_quote with ALL claims in that scene; one unsupported clause or item makes it false. Check the source itself too. Unsupported details such as hijacked logos, spoofed websites, or a special technical method make factual_fidelity and scene_evidence_complete false even if the article describes ordinary impersonation. Unsupported evaluative adjectives like sophisticated also fail factual_fidelity.
+    return f"""Independently audit this proposed YouTube Short against the primary FTC article below. Return JSON only with boolean fields factual_fidelity, practical_advice, quality, diversity, no_invented_incidents, scene_evidence_complete, conditions_preserved, visual_disclosure, original_narration, a short notes string, and first_failure_scene (integer 1–7 for a scene failure, otherwise null). Set each boolean false unless fully supported. Check EVERY claim in the hook, title, description, every scene narration and heading, every visual implication, and EVERY on-screen item. For scene_evidence_complete, compare EACH scene's own exact evidence_quote with ALL claims in that scene; one unsupported clause or item makes it false. Check the source itself too. For original_narration, reject a script that reads, truncates, or lightly rearranges article sentences across multiple scenes, even if all facts are true. A brief necessary source phrase is acceptable; the spoken script must explain the pattern in original wording. Unsupported details such as hijacked logos, spoofed websites, or a special technical method make factual_fidelity and scene_evidence_complete false even if the article describes ordinary impersonation. Unsupported evaluative adjectives like sophisticated or perfect also fail factual_fidelity.
 
-For conditions_preserved, reject changed scope, certainty, or alternatives: "stops answering OR makes an excuse" cannot become "always cuts off contact"; "never pay anyone who says you can ONLY pay by wire, gift card, crypto, or payment app" cannot become a blanket "no wires" rule. Preserve may, typically, usually, and only. For visual_disclosure, reject SOURCE: FTC on any recreated phone, profile, invoice, payment card or other fictional interface; such visuals need Illustration. SOURCE: FTC is for an explicit factual FTC source card only. Verify the first scene actually speaks the concrete hook verbatim. Reject unsafe or vague advice, invented real victims/losses/screenshots/quotes, unsourced numbers including words, seasonal framing, and generic or repeated scenes. A single failure must set its relevant field false. Do not rubber-stamp; notes should identify a specific checked passage or the first rejection.
+For conditions_preserved, reject changed scope, certainty, or alternatives: "stops answering OR makes an excuse" cannot become "always cuts off contact"; "never pay anyone who says you can ONLY pay by wire, gift card, crypto, or payment app" cannot become a blanket "no wires" rule. Preserve may, typically, usually, and only. Renderer visual contract: phone is a fictional UNKNOWN CONTACT messaging UI with items as messages; profile is a generic avatar/LOOKS FAMILIAR? showing only the first item; payment is a fictional PAYMENT REQUEST / HOLD TO VERIFY card; receipt is an ILLUSTRATED DOCUMENT; flow is 1–3 connected nodes; warning is an icon with at most two items; cards are abstract explanatory cards. Phone needs a sourced messaging/contact mechanism, profile a sourced identity mechanism; cards/flow/warning suit website or in-person contexts without interface evidence. Illustration labels do not excuse false factual items or visual implications: "Empty lot" is unsupported when the source says only that one buyer's car is absent. For visual_disclosure, reject SOURCE: FTC on any recreated phone, profile, invoice, payment card or other fictional interface; such visuals need Illustration. SOURCE: FTC is for an explicit factual FTC source card only. Verify the first scene actually speaks the concrete hook verbatim. Reject unsafe or vague advice, invented real victims/losses/screenshots/quotes, unsourced numbers including words, seasonal framing, and generic or repeated scenes. A single failure must set its relevant field false. Do not rubber-stamp; notes should identify a specific checked passage or the first rejection.
 
 Article URL: {url}
 Visible article text:
@@ -450,6 +452,23 @@ def _text_field(value: Any, name: str, max_len: int = 500) -> str:
     if not isinstance(value, str) or not value.strip() or len(value) > max_len:
         raise ResearchError(f"invalid {name}")
     return value.strip()
+
+
+def _source_reading_counts(narration: list[str], source: str) -> tuple[int, int]:
+    """Count spoken word positions in source runs of at least eight exact tokens."""
+    source_words = [match.group().casefold() for match in WORD.finditer(source)]
+    source_runs = {tuple(source_words[index:index + SOURCE_RUN_WORDS])
+                   for index in range(len(source_words) - SOURCE_RUN_WORDS + 1)}
+    covered = total = 0
+    for scene in narration:
+        words = [match.group().casefold() for match in WORD.finditer(scene)]
+        matched = [False] * len(words)
+        for index in range(len(words) - SOURCE_RUN_WORDS + 1):
+            if tuple(words[index:index + SOURCE_RUN_WORDS]) in source_runs:
+                matched[index:index + SOURCE_RUN_WORDS] = [True] * SOURCE_RUN_WORDS
+        covered += sum(matched)
+        total += len(words)
+    return covered, total
 
 
 def validate_script(case: dict[str, Any], url: str, source: str) -> dict[str, Any]:
@@ -496,6 +515,9 @@ def validate_script(case: dict[str, Any], url: str, source: str) -> dict[str, An
     count = len(WORD.findall(" ".join(narration)))
     if not 90 <= count <= 125:
         raise ResearchError(f"narration word count {count} outside 90-125")
+    copied, total = _source_reading_counts(narration, source)
+    if copied * 100 > total * MAX_SOURCE_READING_PERCENT:
+        raise ResearchError(f"narration copies source prose ({copied} of {total} spoken words)")
     metadata = " ".join(case[k] for k in ("title", "hook", "description"))
     metadata = metadata.replace(url, "")
     if not _numbers(metadata).issubset(_numbers(source)):
@@ -648,7 +670,7 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                 break
             gates = ("factual_fidelity", "practical_advice", "quality", "diversity",
                      "no_invented_incidents", "scene_evidence_complete", "conditions_preserved",
-                     "visual_disclosure")
+                     "visual_disclosure", "original_narration")
             failed_gates = [gate for gate in gates if review.get(gate) is not True]
             if failed_gates:
                 failure_scene = review.get("first_failure_scene")

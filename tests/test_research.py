@@ -41,11 +41,73 @@ def script(url: str = URL) -> dict:
 def review() -> dict:
     return {"factual_fidelity": True, "practical_advice": True, "quality": True,
             "diversity": True, "no_invented_incidents": True, "scene_evidence_complete": True,
-            "conditions_preserved": True, "visual_disclosure": True,
+            "conditions_preserved": True, "visual_disclosure": True, "original_narration": True,
             "notes": "The mechanism and action match the source.", "first_failure_scene": None}
 
 
 class SourceValidationTests(unittest.TestCase):
+    def test_rejects_source_reading_but_accepts_original_paraphrase(self):
+        copied = script()
+        copied_lines = [
+            "Imagine showing up at the dealership and finding out the dealer has no record of your payment.",
+            "Scammers set up bogus car dealership websites to trick you into paying up front for a car.",
+            "They clone real dealer websites by copying brand logos, vehicle listings, and even photos.",
+            "These sites might advertise rare muscle cars or hard-to-find classics to lure you in.",
+            "To put you at ease, they describe the buying process and offer flexible return policies.",
+            "Protect yourself by asking to see the car and the dealership in person.",
+            "Walk away if the dealer insists on an upfront payment by wire transfer only.",
+        ]
+        article = (SOURCE + " But imagine showing up at the dealership and finding out the dealer "
+                   "has no record of your order or your payment. Scammers set up bogus car "
+                   "dealership websites to trick you into paying up front for a car you’ll never "
+                   "lay hands on. They clone a real auto dealer’s website, copying the brand logos, "
+                   "vehicle listings, and photos down to the last detail. They might advertise rare "
+                   "muscle cars or hard-to-find classics to lure you in. They describe the buying "
+                   "process in detail and offer flexible return policies to put you at ease. So go "
+                   "the extra mile — ask to see the car, and the dealership, in person. Walk away if "
+                   "the dealer insists on an upfront payment by wire transfer only.")
+        for scene, line in zip(copied["scenes"], copied_lines):
+            scene["narration"] = line
+        copied["hook"] = copied_lines[0]
+        covered, total = research._source_reading_counts(copied_lines, article)
+        self.assertGreater(covered * 100, total * research.MAX_SOURCE_READING_PERCENT)
+        with self.assertRaisesRegex(research.ResearchError, "narration copies source prose"):
+            research.validate_script(copied, URL, article)
+
+        original = script()
+        self.assertEqual(research._source_reading_counts(
+            [scene["narration"] for scene in original["scenes"]], SOURCE)[0], 0)
+        self.assertEqual(research.validate_script(original, URL, SOURCE), original)
+
+    def test_short_source_phrase_and_exact_thirty_percent_are_allowed(self):
+        source_words = [f"sourceword{i}" for i in range(40)]
+        article = SOURCE + " " + " ".join(source_words)
+        scene_sizes = (10, 10, 10, 17, 17, 18, 18)
+        for borrowed in (8, 30):
+            with self.subTest(borrowed=borrowed):
+                words = source_words[:borrowed] + [f"originalword{i}" for i in range(100 - borrowed)]
+                candidate = script()
+                offset = 0
+                for scene, size in zip(candidate["scenes"], scene_sizes):
+                    scene["narration"] = " ".join(words[offset:offset + size])
+                    offset += size
+                candidate["hook"] = candidate["scenes"][0]["narration"]
+                self.assertEqual(research._source_reading_counts(
+                    [scene["narration"] for scene in candidate["scenes"]], article), (borrowed, 100))
+                self.assertEqual(research.validate_script(candidate, URL, article), candidate)
+
+    def test_prompts_explain_originality_and_renderer_visual_contract(self):
+        writer = research._writer_prompt(URL, "Fake listing", research._source_passages(SOURCE))
+        reviewer = research._reviewer_prompt(script(), URL, SOURCE)
+        for prompt in (writer, reviewer):
+            self.assertIn("UNKNOWN CONTACT", prompt)
+            self.assertIn("LOOKS FAMILIAR?", prompt)
+            self.assertIn("ILLUSTRATED DOCUMENT", prompt)
+        self.assertIn("empty dealership lot", writer)
+        self.assertIn("Empty lot", reviewer)
+        self.assertIn("original spoken story", writer)
+        self.assertIn("original_narration", reviewer)
+
     def test_citation_passages_are_bounded_and_literal_source_substrings(self):
         source = (SOURCE + " ") * 40
         passages = research._source_passages(source)
@@ -808,6 +870,19 @@ class ResearchRunTests(unittest.TestCase):
         state = json.loads(self.state.read_text())
         self.assertEqual(state["status"], "failed")
         self.assertIn("conditions_preserved", state["rejected"][0]["reason"])
+        self.assertEqual(list(self.content.glob("*.json")), [])
+
+    def test_failed_original_narration_review_rejects_script(self):
+        weak_review = {**review(), "original_narration": False,
+                       "notes": "The narration lightly rearranges the FTC article."}
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(URL), weak_review]):
+            self.assertEqual(self.run_it(limit=1), [])
+        state = json.loads(self.state.read_text())
+        self.assertIn("original_narration", state["rejected"][0]["reason"])
         self.assertEqual(list(self.content.glob("*.json")), [])
 
     def test_unsupported_scene_claim_is_still_rejected_by_reviewer_with_owned_quote(self):
