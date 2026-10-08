@@ -15,37 +15,37 @@
   "used_source_hashes": [
     "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
   ],
-  "checked_at": "2026-10-08T18:43:11.770063+00:00",
+  "checked_at": "2026-10-08T18:47:40.898076+00:00",
   "generation_attempts": [
+    {
+      "model": "gemini-3.1-flash-lite",
+      "status": "transient",
+      "detail": "writer: HTTP 503"
+    },
     {
       "model": "gemini-3.5-flash-lite",
       "status": "transient",
       "detail": "writer: HTTP 503"
     },
     {
-      "model": "gemini-3.1-flash-lite",
-      "status": "success",
-      "detail": "writer"
-    },
-    {
-      "model": "gemma-4-31b-it",
-      "status": "success",
-      "detail": "reviewer"
+      "model": "gemini-3.7-flash",
+      "status": "transient",
+      "detail": "writer: HTTP 429"
     }
   ],
   "model_order": [
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
     "gemini-3.8-flash",
     "gemma-4-31b-it",
-    "gemma-4-26b-a4b-it"
+    "gemma-4-26b-a4b-it",
+    "gemini-3.5-flash-lite"
   ],
   "writer_order": [
-    "gemini-3.5-flash-lite",
     "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
     "gemini-3.7-flash",
     "gemini-3.6-flash",
     "gemini-3.5-flash",
@@ -63,11 +63,6 @@
   ],
   "status": "failed",
   "generation_calls": 3,
-  "rejected": [
-    {
-      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet",
-      "reason": "reviewer rejected: scene 1: factual_fidelity, scene_evidence_complete, conditions_preserved"
-    }
-  ],
-  "error": "remaining Gemini calls cannot cover writer and reviewer"
+  "rejected": [],
+  "error": "Gemini generation budget cannot cover separate review; last gemini-3.7-flash writer: HTTP 429"
 }
