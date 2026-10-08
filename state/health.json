@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-08T18:27:26.110158+00:00",
+  "checked_at": "2026-10-08T18:32:26.372309+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
   "status": "needs_attention",
   "counts": {
@@ -13,7 +13,7 @@
   },
   "last_pipeline_failure": {
     "component": "research",
-    "at": "2026-10-08T18:26:57.116306+00:00",
+    "at": "2026-10-08T18:31:59.306296+00:00",
     "status": "failed"
   },
   "alerts": [
