@@ -1,19 +1,19 @@
 {
-  "checked_at": "2026-10-08T18:32:26.372309+00:00",
+  "checked_at": "2026-10-08T18:41:26.866780+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
   "status": "needs_attention",
   "counts": {
     "reviewed_stock": 7,
     "ready_queue": 5,
     "confirmed_public_cases": 1,
-    "private_previews": 1,
-    "active_reservations": 1,
+    "private_previews": 2,
+    "active_reservations": 0,
     "analytics_rows": 3,
     "eligible_comparisons": 0
   },
   "last_pipeline_failure": {
     "component": "research",
-    "at": "2026-10-08T18:31:59.306296+00:00",
+    "at": "2026-10-08T18:40:51.936940+00:00",
     "status": "failed"
   },
   "alerts": [
