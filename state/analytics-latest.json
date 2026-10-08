@@ -1,0 +1,199 @@
+{
+  "as_of": "2026-10-08",
+  "window": {
+    "start": "2026-09-09",
+    "end": "2026-10-06"
+  },
+  "channel": {
+    "id": "UCz0W-lSVvEeWYufkUVaVUKA",
+    "title": "Scam Autopsy",
+    "viewCount": "140",
+    "subscriberCount": "4",
+    "hiddenSubscriberCount": false,
+    "videoCount": "1"
+  },
+  "videos": [
+    {
+      "id": "cgnDylK2Xm8",
+      "title": "How an Email Redirected a $449K+ House Payment",
+      "published_at": "2026-10-08T17:48:30Z",
+      "privacy": "public",
+      "duration": "PT51S",
+      "statistics": {
+        "viewCount": "0",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "uHNks3I6tM4",
+      "title": "How an Email Redirected a $449K+ House Payment",
+      "published_at": "2026-10-08T17:43:25Z",
+      "privacy": "private",
+      "duration": "PT51S",
+      "statistics": {
+        "viewCount": "0",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "6-fpCV3PtUs",
+      "title": "The Recovery Scam That Targets You Twice (Dramatized)",
+      "published_at": "2026-07-29T18:30:00Z",
+      "privacy": "unlisted",
+      "duration": "PT58S",
+      "statistics": {
+        "viewCount": "10",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "UKJNgV3HRPQ",
+      "title": "The Fake Parking QR Code Trap (Dramatized)",
+      "published_at": "2026-07-28T22:00:38Z",
+      "privacy": "unlisted",
+      "duration": "PT55S",
+      "statistics": {
+        "viewCount": "18",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "R1XyOimFHxE",
+      "title": "Why an Arrest Threat Ends With Gift Cards (Dramatized)",
+      "published_at": "2026-07-27T22:00:05Z",
+      "privacy": "unlisted",
+      "duration": "PT1M",
+      "statistics": {
+        "viewCount": "12",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "gXKhfz_I1GU",
+      "title": "The Fake Job That Makes You Pay to Get Paid (Dramatized)",
+      "published_at": "2026-07-26T22:00:14Z",
+      "privacy": "unlisted",
+      "duration": "PT1M",
+      "statistics": {
+        "viewCount": "3",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "bx1aazuI9Uk",
+      "title": "The Bank Text That Sends You to a Scammer (Dramatized)",
+      "published_at": "2026-07-26T16:00:24Z",
+      "privacy": "unlisted",
+      "duration": "PT1M2S",
+      "statistics": {
+        "viewCount": "15",
+        "likeCount": "1",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "y8amwVeM8Pc",
+      "title": "The Fake CEO Video Call That Triggers a Transfer (Dramatized)",
+      "published_at": "2026-07-25T22:00:22Z",
+      "privacy": "unlisted",
+      "duration": "PT1M",
+      "statistics": {
+        "viewCount": "19",
+        "likeCount": "1",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "38Et7Lw-M1A",
+      "title": "The Fake Hacked-Computer Popup (Dramatized)",
+      "published_at": "2026-07-25T09:23:31Z",
+      "privacy": "unlisted",
+      "duration": "PT1M",
+      "statistics": {
+        "viewCount": "17",
+        "likeCount": "2",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
+      "id": "krQ-G9uAxAg",
+      "title": "How a Wrong-Number Text Builds a Money Trap (Dramatized)",
+      "published_at": "2026-07-25T08:42:33Z",
+      "privacy": "unlisted",
+      "duration": "PT1M",
+      "statistics": {
+        "viewCount": "46",
+        "likeCount": "3",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    }
+  ],
+  "analytics": [
+    {
+      "video": "R1XyOimFHxE",
+      "views": 2,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "gXKhfz_I1GU",
+      "views": 2,
+      "engagedViews": 1,
+      "averageViewDuration": 12,
+      "averageViewPercentage": 21.22,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "UKJNgV3HRPQ",
+      "views": 1,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    }
+  ],
+  "limits": [
+    "Analytics lags; small samples do not establish winners.",
+    "Engaged views divided by views is not Studio's stayed-to-watch rate."
+  ]
+}

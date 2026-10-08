@@ -1,0 +1,6 @@
+{
+  "checked_at": "2026-10-08T17:48:44.112083+00:00",
+  "status": "failed",
+  "error": "404 Client Error: Not Found for url: https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+  "generation_calls": 1
+}
