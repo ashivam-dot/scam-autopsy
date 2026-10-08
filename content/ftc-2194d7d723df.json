@@ -1,0 +1,105 @@
+{
+  "id": "ftc-2194d7d723df",
+  "title": "FTC Warning: Fake Farm Equipment Sellers",
+  "hook": "Are you looking for farm equipment online? Watch out for this sneaky impersonation scam.",
+  "source_urls": [
+    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses"
+  ],
+  "description": "Learn how to spot and avoid a sophisticated FTC-documented pattern where scammers impersonate legitimate farm equipment businesses online. Protect your money by verifying sellers independently. Read the full warning from the FTC here: https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "Scammers are actively impersonating real farm equipment sellers online to target buyers.",
+      "heading": "Fake Farm Ads",
+      "visual": "profile",
+      "items": [
+        "Impersonated brands",
+        "Fake social ads"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "Scammers posing as farm equipment businesses are selling (fake) equipment to farmers"
+    },
+    {
+      "narration": "They hijack trusted brand names in search results and social media feeds to build instant trust.",
+      "heading": "Familiar Names",
+      "visual": "phone",
+      "items": [
+        "Hijacked logos",
+        "Spoofed websites"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "Or you search online and see a tractor from a business you know, and maybe even bought equipment from before."
+    },
+    {
+      "narration": "Next, they send realistic purchase agreements, demanding thousands of dollars upfront via wire transfers.",
+      "heading": "The Invoice",
+      "visual": "receipt",
+      "items": [
+        "Fake invoice",
+        "Wire demand"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "They typically ask you to send thousands of dollars — usually by wire transfer — as a deposit or full payment"
+    },
+    {
+      "narration": "But the delivery never arrives. Scammers cut off contact, leaving buyers empty-handed.",
+      "heading": "Empty Handed",
+      "visual": "flow",
+      "items": [
+        "Missed delivery",
+        "No response"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "The delivery never comes. It turns out this was never a legit business and was all a scam."
+    },
+    {
+      "narration": "Protect yourself. Research the seller online using their name plus the word scam or complaint.",
+      "heading": "Verify First",
+      "visual": "warning",
+      "items": [
+        "Search name + 'scam'",
+        "Skip paid ads"
+      ],
+      "label": "SOURCE: FTC",
+      "evidence_quote": "Do some research by searching online for the company name plus “scam” or “complaint.”"
+    },
+    {
+      "narration": "Never send money if a seller insists on wire transfers, gift cards, or cryptocurrency.",
+      "heading": "Payment Rules",
+      "visual": "payment",
+      "items": [
+        "No wires",
+        "No gift cards",
+        "No crypto"
+      ],
+      "label": "SOURCE: FTC",
+      "evidence_quote": "Never send money to anyone who says you can only pay by wire transfer , gift card , cryptocurrency , or payment app ."
+    },
+    {
+      "narration": "Always verify contact details independently, and report any suspicious activity directly to the FTC.",
+      "heading": "Report Fraud",
+      "visual": "cards",
+      "items": [
+        "Independent lookup",
+        "ReportFraud.ftc.gov"
+      ],
+      "label": "SOURCE: FTC",
+      "evidence_quote": "Spot an impersonation scam? Tell the FTC at ReportFraud.ftc.gov ."
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "gemini-3.1-flash-lite",
+    "writer": "gemini-3.5-flash",
+    "source_checked_at": "2026-10-08T18:18:33.631852+00:00",
+    "notes": "The proposed script accurately reflects the FTC alert. It correctly identifies the scam mechanism, verification steps, and reporting procedures without adding speculative details or invented victim stories. All UI elements are appropriately labeled as illustrations.",
+    "checks": {
+      "factual_fidelity": true,
+      "practical_advice": true,
+      "quality": true,
+      "diversity": true,
+      "no_invented_incidents": true
+    },
+    "source_sha256": "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
+  }
+}
