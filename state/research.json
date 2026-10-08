@@ -1,31 +1,5 @@
 {
   "model_unavailable_until": {},
-  "checked_at": "2026-10-08T18:18:33.631852+00:00",
-  "generation_attempts": [
-    {
-      "model": "gemini-3.5-flash",
-      "status": "success",
-      "detail": "writer"
-    },
-    {
-      "model": "gemini-3.5-flash-lite",
-      "status": "transient",
-      "detail": "reviewer: HTTP 503"
-    },
-    {
-      "model": "gemini-3.1-flash-lite",
-      "status": "success",
-      "detail": "reviewer"
-    }
-  ],
-  "model_order": [
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.1-flash-lite",
-    "gemini-3.7-flash",
-    "gemini-3.6-flash",
-    "gemini-3.8-flash"
-  ],
   "used_source_urls": [
     "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-impersonating-farm-equipment-businesses",
     "https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf",
@@ -41,9 +15,52 @@
   "used_source_hashes": [
     "1f4239b89796f4cf59bb9d16fdca4e9278dd6276920559b81ef8a1fb612a9c93"
   ],
-  "status": "partial_success",
-  "generated": 1,
-  "generation_calls": 3,
-  "rejected": [],
-  "stopped_reason": "remaining Gemini calls cannot cover writer and reviewer"
+  "checked_at": "2026-10-08T18:26:57.116306+00:00",
+  "generation_attempts": [
+    {
+      "model": "gemini-3.1-flash-lite",
+      "status": "success",
+      "detail": "writer"
+    },
+    {
+      "model": "gemini-3.1-flash-lite",
+      "status": "success",
+      "detail": "writer"
+    }
+  ],
+  "model_order": [
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.1-flash-lite",
+    "gemini-3.8-flash",
+    "gemini-3.5-flash-lite"
+  ],
+  "writer_order": [
+    "gemini-3.1-flash-lite",
+    "gemini-3.5-flash-lite",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash"
+  ],
+  "reviewer_order": [
+    "gemini-3.5-flash",
+    "gemini-3.7-flash",
+    "gemini-3.6-flash",
+    "gemini-3.8-flash"
+  ],
+  "status": "failed",
+  "generation_calls": 2,
+  "rejected": [
+    {
+      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet",
+      "reason": "writer validation: evidence quote absent from article"
+    },
+    {
+      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
+      "reason": "writer validation: evidence quote absent from article"
+    }
+  ],
+  "error": "no candidate passed review"
 }

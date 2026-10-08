@@ -14,13 +14,27 @@
   },
   "videos": [
     {
+      "id": "TWwcOVf3M8M",
+      "title": "The Tractor That Never Arrived: A Fake Seller Trap",
+      "published_at": "2026-10-08T18:24:26Z",
+      "privacy": "private",
+      "duration": "PT49S",
+      "statistics": {
+        "viewCount": "0",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
+    {
       "id": "cgnDylK2Xm8",
       "title": "How an Email Redirected a $449K+ House Payment",
       "published_at": "2026-10-08T17:48:30Z",
       "privacy": "public",
       "duration": "PT51S",
       "statistics": {
-        "viewCount": "5",
+        "viewCount": "6",
         "likeCount": "0",
         "dislikeCount": "0",
         "favoriteCount": "0",
