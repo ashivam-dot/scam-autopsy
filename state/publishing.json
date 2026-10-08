@@ -31,6 +31,12 @@
       "duration": "PT51S",
       "title": "How an Email Redirected a $449K+ House Payment",
       "verified_at": "2026-10-08T17:48:30.781136+00:00"
+    },
+    "ftc-2194d7d723df": {
+      "status": "reserved",
+      "reserved_at": "2026-10-08T18:23:29.440089+00:00",
+      "path": "content/ftc-2194d7d723df.json",
+      "content_sha256": "c76aa4e49a010047a4e49d3d31d3b0ac744b470259ca190ef2815cc410727f4f"
     }
   }
 }
