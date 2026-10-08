@@ -18,12 +18,19 @@
       "superseded_by": "01-house-wire-r2"
     },
     "01-house-wire-r2": {
-      "status": "processing",
+      "status": "published",
       "reserved_at": "2026-10-08T17:47:08.341376+00:00",
       "path": "content/01-house-wire-r2.json",
       "content_sha256": "dc3d51fb1998f79e62e30bf8ee0a55b045005a2d70b1fa35291cd44e56ce8093",
       "upload_started_at": "2026-10-08T17:47:55.207298+00:00",
-      "video_id": "cgnDylK2Xm8"
+      "video_id": "cgnDylK2Xm8",
+      "url": "https://www.youtube.com/watch?v=cgnDylK2Xm8",
+      "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
+      "privacy": "public",
+      "processing": "succeeded",
+      "duration": "PT51S",
+      "title": "How an Email Redirected a $449K+ House Payment",
+      "verified_at": "2026-10-08T17:48:30.781136+00:00"
     }
   }
 }
