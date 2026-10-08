@@ -223,7 +223,7 @@ class ResearchRunTests(unittest.TestCase):
         def generate(_session, _key, model, prompt, budget, _temperature):
             budget[0] += 1
             used_models.append(model)
-            if model == "gemini-3.8-flash":
+            if model == "gemini-3.7-flash":
                 raise research.ModelUnavailable("listed but generation unavailable")
             return script(URL) if "Create ONE" in prompt else review()
 
@@ -234,21 +234,21 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate):
             paths = self.run_it(limit=1)
         self.assertEqual(len(paths), 1)
-        self.assertEqual(used_models, ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash"])
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
         created = json.loads(paths[0].read_text())
-        self.assertEqual(created["review"]["writer"], "gemini-3.7-flash")
-        self.assertEqual(created["review"]["reviewer"], "gemini-3.6-flash")
+        self.assertEqual(created["review"]["writer"], "gemini-3.6-flash")
+        self.assertEqual(created["review"]["reviewer"], "gemini-3.8-flash")
         state = json.loads(self.state.read_text())
         self.assertEqual(state["generation_calls"], 3)
         from datetime import datetime, timezone
-        until = datetime.fromisoformat(state["model_unavailable_until"]["gemini-3.8-flash"])
+        until = datetime.fromisoformat(state["model_unavailable_until"]["gemini-3.7-flash"])
         self.assertGreater(until, datetime.now(timezone.utc))
 
     def test_persisted_404_exclusion_skips_bad_model_next_run(self):
         from datetime import datetime, timedelta, timezone
         self.state.parent.mkdir()
         self.state.write_text(json.dumps({"model_unavailable_until": {
-            "gemini-3.8-flash": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()}}))
+            "gemini-3.7-flash": (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()}}))
         models = []
 
         def generate(_session, _key, model, prompt, budget, _temperature):
@@ -262,7 +262,7 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "extract_article", return_value=SOURCE), \
              patch.object(research, "_gemini_json", side_effect=generate):
             self.assertEqual(len(self.run_it(limit=1)), 1)
-        self.assertEqual(models, ["gemini-3.7-flash", "gemini-3.6-flash"])
+        self.assertEqual(models, ["gemini-3.6-flash", "gemini-3.8-flash"])
 
     def test_404_response_is_not_retried_on_same_model(self):
         session = Mock()
@@ -290,17 +290,97 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(state["status"], "failed")
         self.assertEqual(state["generation_calls"], 3)
 
-    def test_429_retries_once_with_bounded_budget(self):
+    def test_503_writer_falls_back_once_without_persistent_exclusion(self):
+        used_models = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            used_models.append(model)
+            if model == "gemini-3.7-flash":
+                raise research.ModelTransient("Gemini model returned HTTP 503")
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate), \
+             patch.object(research.time, "sleep") as sleep:
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
+        sleep.assert_called_once_with(2)
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["generation_calls"], 3)
+        self.assertNotIn("gemini-3.7-flash", state["model_unavailable_until"])
+
+    def test_read_timeout_falls_back_within_global_call_budget(self):
+        used_models = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            used_models.append(model)
+            if model == "gemini-3.7-flash":
+                raise research.requests.exceptions.ReadTimeout("generation read timed out")
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate), \
+             patch.object(research.time, "sleep") as sleep:
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(used_models, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.8-flash"])
+        self.assertEqual(json.loads(self.state.read_text())["generation_calls"], 3)
+        sleep.assert_called_once_with(2)
+
+    def test_approved_first_script_survives_later_503_and_budget_limit(self):
+        calls = []
+
+        def generate(_session, _key, model, prompt, budget, _temperature):
+            budget[0] += 1
+            calls.append(model)
+            if len(calls) == 3:
+                raise research.ModelTransient("Gemini model returned HTTP 503")
+            return script(URL) if "Create ONE" in prompt else review()
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one"), (OTHER_URL, "Scam two")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", side_effect=[SOURCE + URL, SOURCE + OTHER_URL]), \
+             patch.object(research, "_gemini_json", side_effect=generate), \
+             patch.object(research.time, "sleep") as sleep:
+            paths = self.run_it()
+        self.assertEqual(len(paths), 1)
+        self.assertEqual(json.loads(paths[0].read_text())["source_urls"], [URL])
+        self.assertEqual(calls, ["gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.7-flash"])
+        sleep.assert_called_once_with(2)
+        state = json.loads(self.state.read_text())
+        self.assertEqual(state["status"], "partial_success")
+        self.assertEqual(state["generation_calls"], 3)
+
+    def test_retryable_status_codes_are_bounded_transients(self):
+        for status in (429, 502, 503, 504):
+            with self.subTest(status=status):
+                session = Mock()
+                session.post.return_value = Mock(status_code=status)
+                budget = [0]
+                with self.assertRaises(research.ModelTransient):
+                    research._gemini_json(session, "test-key", "gemini-3.7-flash", "test", budget, 0.6)
+                self.assertEqual(session.post.call_count, 1)
+                self.assertEqual(budget[0], 1)
+
+    def test_429_uses_one_call_then_signals_model_fallback(self):
         response = Mock(status_code=429)
         session = Mock()
         session.post.return_value = response
         budget = [0]
-        with patch.object(research.time, "sleep") as sleep:
-            with self.assertRaisesRegex(research.ResearchError, "quota exhausted"):
-                research._gemini_json(session, "test-key", "gemini-3.8-flash", "test", budget, 0.1)
-        self.assertEqual(session.post.call_count, 2)
-        self.assertEqual(budget[0], 2)
-        sleep.assert_called_once_with(2)
+        with self.assertRaises(research.ModelTransient):
+            research._gemini_json(session, "test-key", "gemini-3.7-flash", "test", budget, 0.1)
+        self.assertEqual(session.post.call_count, 1)
+        self.assertEqual(budget[0], 1)
 
     def test_current_flash_uses_documented_low_thinking_level(self):
         response = Mock(status_code=200)
@@ -311,6 +391,7 @@ class ResearchRunTests(unittest.TestCase):
         research._gemini_json(session, "test-key", "gemini-3.8-flash", "test", [0], 0.6)
         self.assertEqual(session.post.call_args.kwargs["json"]["generationConfig"]["thinkingConfig"],
                          {"thinkingLevel": "low"})
+        self.assertEqual(session.post.call_args.kwargs["timeout"], (10, 90))
 
     def test_only_configured_supported_models_can_be_selected(self):
         session = Mock()

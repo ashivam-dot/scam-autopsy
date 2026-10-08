@@ -94,6 +94,11 @@ def publish(path, media, make_public=True):
         record.update(status="processing", video_id=video_id)
         durable_save(state, "Record private upload " + case["id"])
     receipt = youtube.finalize(api, case, video_id, publish=make_public)
+    if make_public:
+        try:
+            receipt["playlist_id"] = youtube.file_in_playlist(api, video_id)
+        except Exception as exc:
+            receipt["playlist_error"] = type(exc).__name__
     record.update(receipt, status="published" if make_public else "private", verified_at=now())
     durable_save(state, "Verify " + receipt["privacy"] + " case " + case["id"])
     print(json.dumps(receipt))

@@ -128,6 +128,35 @@ def finalize(api, case, video_id, publish=True, max_wait=420):
     return {"video_id": video_id, "url": "https://www.youtube.com/watch?v=" + video_id, "channel_id": CHANNEL_ID, "privacy": expected, "processing": "succeeded", "duration": verified["contentDetails"]["duration"], "title": verified["snippet"]["title"]}
 
 
+def file_in_playlist(api, video_id):
+    """Organize only a verified public video; never repeat a playlist entry."""
+    identity(api)
+    video = api.videos().list(part="snippet,status", id=video_id).execute()["items"][0]
+    if video["snippet"]["channelId"] != CHANNEL_ID or video["status"]["privacyStatus"] != "public":
+        raise RuntimeError("Only this channel's public videos enter the sourced playlist")
+    title = "Scam Autopsy | Sourced Investigations"
+    rows = api.playlists().list(part="snippet", mine=True, maxResults=50).execute().get("items", [])
+    found = [r for r in rows if r["snippet"]["title"] == title and r["snippet"]["channelId"] == CHANNEL_ID]
+    if len(found) > 1:
+        raise RuntimeError("Multiple sourced playlists require reconciliation")
+    if found:
+        playlist_id = found[0]["id"]
+    else:
+        result = api.playlists().insert(part="snippet,status", body={"snippet": {"title": title, "description": "Original investigations with primary sources in each video description. Recreated visuals are illustrations."}, "status": {"privacyStatus": "public"}}).execute()
+        playlist_id = result["id"]
+    token = None
+    while True:
+        params = {"part": "contentDetails", "playlistId": playlist_id, "maxResults": 50}
+        if token: params["pageToken"] = token
+        page = api.playlistItems().list(**params).execute()
+        if any(r["contentDetails"]["videoId"] == video_id for r in page.get("items", [])):
+            return playlist_id
+        token = page.get("nextPageToken")
+        if not token: break
+    api.playlistItems().insert(part="snippet", body={"snippet": {"playlistId": playlist_id, "resourceId": {"kind": "youtube#video", "videoId": video_id}}}).execute()
+    return playlist_id
+
+
 def snapshot(days=28):
     api = client()
     channel = identity(api)

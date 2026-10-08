@@ -45,3 +45,22 @@ def test_duplicate_uploaded_case_stops_republication(monkeypatch):
 def test_description_has_primary_sources_and_synthetic_narration():
     text = youtube.description(case())
     assert "ic3.gov" in text and "synthetic narration" in text and len(text) < 5000
+
+
+def test_playlist_does_not_include_another_channels_video():
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [{"snippet": {"channelId": "another-channel"}, "status": {"privacyStatus": "public"}}]}
+    with pytest.raises(RuntimeError, match="Only this channel"):
+        youtube.file_in_playlist(api, "video")
+    api.playlists.assert_not_called()
+
+
+def test_existing_playlist_entry_is_not_inserted_again():
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [{"snippet": {"channelId": youtube.CHANNEL_ID}, "status": {"privacyStatus": "public"}}]}
+    api.playlists.return_value.list.return_value.execute.return_value = {"items": [{"id": "playlist", "snippet": {"channelId": youtube.CHANNEL_ID, "title": "Scam Autopsy | Sourced Investigations"}}]}
+    api.playlistItems.return_value.list.return_value.execute.return_value = {"items": [{"contentDetails": {"videoId": "video"}}]}
+    assert youtube.file_in_playlist(api, "video") == "playlist"
+    api.playlistItems.return_value.insert.assert_not_called()
