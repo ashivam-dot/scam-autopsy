@@ -1,0 +1,94 @@
+{
+  "id": "01-house-wire-r2",
+  "title": "How an Email Redirected a $449K+ House Payment",
+  "hook": "One email redirected a home-closing wire of over $449,000.",
+  "source_urls": [
+    "https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf",
+    "https://www.ic3.gov/CrimeInfo/BEC"
+  ],
+  "description": "A documented August 2025 case from the FBI IC3 2025 Annual Report, page 23. The receiving bank confirmed the full amount was on hold; the report does not say the money was returned. Verify wiring changes through a number you find independently. Source: https://www.ic3.gov/AnnualReport/Reports/2025_IC3Report.pdf ; FBI guidance: https://www.ic3.gov/CrimeInfo/BEC . Recreated visuals are illustrations.",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "One email redirected a home-closing wire of over $449,000.",
+      "heading": "ONE EMAIL. $449K+",
+      "visual": "payment",
+      "items": [
+        "Home closing",
+        "Over $449,000"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "In August 2025, buyers received an email impersonating their real attorneys while they were closing on a home.",
+      "heading": "THE EMAIL",
+      "visual": "message",
+      "items": [
+        "Attorney impersonation",
+        "August 2025"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "They sent the wire to the account in that message. The instructions were fraudulent.",
+      "heading": "THE SWITCH",
+      "visual": "flow",
+      "items": [
+        "Email instructions",
+        "Wrong account"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The buyers alerted their bank and filed a complaint with the FBI's Internet Crime Complaint Center.",
+      "heading": "THE REPORT",
+      "visual": "phone",
+      "items": [
+        "Call the bank",
+        "Report to IC3"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The FBI requested a freeze. The receiving bank confirmed the full amount was still there, on hold.",
+      "heading": "THE HOLD",
+      "visual": "receipt",
+      "items": [
+        "Freeze requested",
+        "Full amount on hold"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "The report does not say the money was returned. Catching a false wire before sending is safer.",
+      "heading": "THE LIMIT",
+      "visual": "warning",
+      "items": [
+        "On hold ≠ returned"
+      ],
+      "label": "Illustration"
+    },
+    {
+      "narration": "Before wiring, call your attorney using a number found independently. If you've sent it, call your bank immediately for a recall, then report it at IC3.gov.",
+      "heading": "THE RULE",
+      "visual": "phone",
+      "items": [
+        "Verify by phone",
+        "Bank first",
+        "IC3.gov"
+      ],
+      "label": "Illustration"
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "source-review-2026-10-08",
+    "source_checked_at": "2026-10-08",
+    "notes": [
+      "IC3 2025 Annual Report PDF page 23 documents the August 2025 impersonation, wire over $449,000, IC3 complaint, FBI freeze request, and full amount on hold.",
+      "IC3 BEC page supports independent verification, immediate bank contact and recall request, and IC3 reporting.",
+      "No victim identity, returned-funds claim, or actual email screenshot is invented.",
+      "Release revision uses normalized narration with encoded loudness verification; source facts and narration unchanged."
+    ]
+  }
+}

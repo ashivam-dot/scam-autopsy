@@ -6,7 +6,7 @@ from scam_autopsy import cli
 
 @pytest.fixture
 def queue(tmp_path, monkeypatch):
-    source = Path(__file__).resolve().parents[1] / "content/01-house-wire.json"
+    source = Path(__file__).resolve().parents[1] / "content/01-house-wire-r2.json"
     first = json.loads(source.read_text())
     second = dict(first, id="second-case")
     (tmp_path / "content").mkdir()

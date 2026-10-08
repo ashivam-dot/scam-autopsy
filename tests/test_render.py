@@ -1,5 +1,7 @@
 import json
+import math
 import shutil
+import struct
 import tempfile
 import unittest
 import wave
@@ -8,7 +10,7 @@ from unittest.mock import patch
 
 from PIL import Image, ImageChops
 
-from scam_autopsy.render import HEIGHT, WIDTH, load_case, main, render_frame, render_video
+from scam_autopsy.render import HEIGHT, WIDTH, Scene, _caption, load_case, main, render_frame, render_video
 
 
 def sample_case():
@@ -51,6 +53,13 @@ class RendererTests(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "seven"):
                 load_case(case_path)
 
+    def test_caption_cues_include_lead_in(self):
+        scene = Scene("Wait for the clue", "Clue", "phone", [], "Illustration")
+        scene.cues = [(0.32, 0.55, "Wait"), (0.56, 0.84, "for"), (0.85, 1.12, "the"), (1.13, 1.43, "clue")]
+        self.assertEqual(_caption(scene, 0.25), "")
+        self.assertEqual(_caption(scene, 0.32), "Wait for the clue")
+        self.assertEqual(_caption(scene, 1.7), "")
+
     @unittest.skipUnless(shutil.which("ffmpeg") and shutil.which("ffprobe"), "FFmpeg required")
     def test_ffmpeg_output_has_video_and_audio_receipt(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -67,7 +76,10 @@ class RendererTests(unittest.TestCase):
                     out.setnchannels(1)
                     out.setsampwidth(2)
                     out.setframerate(24000)
-                    out.writeframes(b"\0\0" * 24000)
+                    out.writeframes(b"".join(
+                        struct.pack("<h", int(8000 * math.sin(2 * math.pi * 440 * i / 24000)))
+                        for i in range(24000)
+                    ))
 
             with patch("scam_autopsy.render.synthesize_scenes", fake_speech):
                 receipt = render_video(loaded, Path(tmp) / "test.mp4")
@@ -75,6 +87,8 @@ class RendererTests(unittest.TestCase):
             self.assertEqual(receipt["audio_codec"], "aac")
             self.assertEqual(receipt["pixel_format"], "yuv420p")
             self.assertAlmostEqual(receipt["duration_seconds"], 1.0, delta=0.15)
+            self.assertGreater(receipt["integrated_lufs"], -30)
+            self.assertIsNotNone(receipt["true_peak_dbfs"])
 
 
 if __name__ == "__main__":

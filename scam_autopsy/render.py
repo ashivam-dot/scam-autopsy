@@ -310,13 +310,15 @@ def _caption(scene: Scene, local_time: float) -> str:
         words = scene.narration.split()
         count = min(len(words) - 1, max(0, int(speech_time / max(0.1, scene.duration - 0.55) * len(words))))
         return " ".join(words[(count // 6) * 6:(count // 6 + 1) * 6])
+    if local_time < cues[0][0]:
+        return ""
     current = 0
     for i, (start, _, _) in enumerate(cues):
-        if speech_time >= start:
+        if local_time >= start:
             current = i
         else:
             break
-    if speech_time > cues[-1][1] + 0.2:
+    if local_time > cues[-1][1] + 0.2:
         return ""
     start = (current // 6) * 6
     return " ".join(text for _, _, text in cues[start:start + 6])
@@ -390,9 +392,9 @@ def synthesize_scenes(scenes: list[Scene], wav_path: Path) -> None:
                 if text and start is not None and end is not None:
                     if re.fullmatch(r"[^\w]+", text) and cues:
                         prior = cues[-1]
-                        cues[-1] = (prior[0], max(prior[1], cursor + float(end)), prior[2] + text)
+                        cues[-1] = (prior[0], max(prior[1], 0.25 + cursor + float(end)), prior[2] + text)
                     else:
-                        cues.append((cursor + float(start), cursor + float(end), text))
+                        cues.append((0.25 + cursor + float(start), 0.25 + cursor + float(end), text))
             cursor += len(audio) / SAMPLE_RATE
         if not chunks:
             raise RuntimeError(f"Kokoro produced no audio for scene {index}")
@@ -444,13 +446,30 @@ def _probe(path: Path) -> dict[str, Any]:
         raise RuntimeError("Rendered dimensions or pixel format are wrong")
     if abs(duration - float(audio.get("duration", duration))) > 0.35:
         raise RuntimeError("Audio and video duration differ")
+    loudness = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-map", "0:a:0",
+         "-af", "ebur128=peak=true", "-f", "null", "-"],
+        check=True, capture_output=True, text=True,
+    )
+    integrated = re.findall(r"Integrated loudness:\s*I:\s*(-?(?:inf|\d+(?:\.\d+)?))\s*LUFS", loudness.stderr)
+    peaks = re.findall(r"True peak:\s*Peak:\s*(-?(?:inf|\d+(?:\.\d+)?))\s*dBFS", loudness.stderr)
+    if not integrated:
+        raise RuntimeError("FFmpeg did not report integrated loudness")
+    integrated_lufs = float(integrated[-1])
+    if not math.isfinite(integrated_lufs) or integrated_lufs < -45:
+        raise RuntimeError(f"Rendered audio is empty or too quiet ({integrated_lufs} LUFS)")
+    if duration >= 20 and not -18 <= integrated_lufs <= -14:
+        raise RuntimeError(f"Rendered narration misses the -18 to -14 LUFS target ({integrated_lufs} LUFS)")
+    true_peak_dbfs = float(peaks[-1]) if peaks else None
     return {
         "file": str(path), "duration_seconds": round(duration, 3), "width": WIDTH, "height": HEIGHT,
         "fps": video.get("avg_frame_rate"), "video_codec": video["codec_name"],
         "audio_codec": audio["codec_name"], "pixel_format": video["pix_fmt"],
         "video_duration_seconds": round(float(video.get("duration", duration)), 3),
         "audio_duration_seconds": round(float(audio.get("duration", duration)), 3),
-        "audio_sample_rate": audio.get("sample_rate"), "bytes": path.stat().st_size,
+        "audio_sample_rate": audio.get("sample_rate"),
+        "integrated_lufs": integrated_lufs, "true_peak_dbfs": true_peak_dbfs,
+        "bytes": path.stat().st_size,
     }
 
 
@@ -471,7 +490,8 @@ def render_video(case: dict[str, Any], output: Path) -> dict[str, Any]:
             "ffmpeg", "-hide_banner", "-loglevel", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
             "-s:v", f"{WIDTH}x{HEIGHT}", "-r", str(FPS), "-i", "pipe:0", "-i", str(audio_path),
             "-map", "0:v:0", "-map", "1:a:0", "-c:v", "libx264", "-preset", "medium", "-crf", "20",
-            "-pix_fmt", "yuv420p", "-r", str(FPS), "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
+            "-pix_fmt", "yuv420p", "-r", str(FPS), "-af", "loudnorm=I=-16:TP=-1.5:LRA=7",
+            "-c:a", "aac", "-b:a", "160k", "-ar", "48000",
             "-t", f"{expected_duration:.4f}", "-movflags", "+faststart", str(output),
         ]
         process = subprocess.Popen(command, stdin=subprocess.PIPE, stderr=subprocess.PIPE)

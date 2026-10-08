@@ -9,7 +9,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def case():
-    return json.loads((ROOT / "content/01-house-wire.json").read_text())
+    return json.loads((ROOT / "content/01-house-wire-r2.json").read_text())
 
 
 def test_channel_mismatch_refuses_writes():

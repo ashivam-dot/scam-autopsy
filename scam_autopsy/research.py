@@ -272,6 +272,8 @@ def _existing(content_dir: Path, state: dict[str, Any]) -> tuple[set[str], set[s
     ids: set[str] = set()
     for path in content_dir.glob("*.json"):
         case = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(case, dict) or not isinstance(case.get("source_urls", []), list):
+            raise ResearchError(f"invalid existing content: {path.name}")
         ids.add(str(case.get("id", "")))
         for url in case.get("source_urls", []):
             try:
@@ -392,7 +394,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                      stopped_reason=stopped_reason)
         _write_json(state_file, state)
         return [path for path, _, _, _ in pending]
-    except (ResearchError, requests.RequestException, ET.ParseError, ValueError, KeyError) as exc:
+    except (ResearchError, requests.RequestException, ET.ParseError, ValueError,
+            KeyError, TypeError, AttributeError) as exc:
         state.update(status="failed", error=str(exc)[:300], generation_calls=budget[0])
         _write_json(state_file, state)
         return []

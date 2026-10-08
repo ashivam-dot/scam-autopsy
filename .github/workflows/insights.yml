@@ -29,7 +29,10 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install lightweight research dependencies
-        run: uv pip install --system google-api-python-client google-auth requests beautifulsoup4
+        run: |
+          uv venv --python 3.12 .insights-venv
+          uv pip install --python .insights-venv/bin/python google-api-python-client google-auth requests beautifulsoup4
+          echo "$GITHUB_WORKSPACE/.insights-venv/bin" >> "$GITHUB_PATH"
       - name: Record analytics and evidence-limited growth decisions
         run: python -m scam_autopsy.cli stats
       - name: Refill researched scripts once a week
@@ -49,8 +52,23 @@ jobs:
             git commit -m 'Update channel insights and reviewed source queue'
             git push origin HEAD:main
           fi
+      - name: Verify queue and cloud receipts
+        run: python -m scam_autopsy.health
+      - name: Save health receipt
+        if: always()
+        run: |
+          if [ -f state/health.json ]; then
+            git add state/health.json
+            if ! git diff --cached --quiet; then
+              git commit -m 'Record cloud health verification'
+              git push origin HEAD:main
+            fi
+          fi
       - name: Alert on a failed run
         if: failure()
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh issue create --title 'Channel insights require attention' --body "Run https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+        run: |
+          if [ "$(gh issue list --state open --search 'Channel insights require attention in:title' --json number --jq length)" = '0' ]; then
+            gh issue create --title 'Channel insights require attention' --body "Run https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          fi

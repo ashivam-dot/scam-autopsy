@@ -27,13 +27,13 @@ OAuth revocation, platform policy changes, or exhaustion of a free service can s
 Install Python 3.12, FFmpeg, espeak-ng and DejaVu fonts, then run `uv sync --locked --extra test` and `uv run pytest -q`. Preview one frame without downloading speech weights:
 
 ```sh
-uv run python -m scam_autopsy.render content/01-house-wire.json --preview --output build/preview.png
+uv run python -m scam_autopsy.render content/01-house-wire-r2.json --preview --output build/preview.png
 ```
 
 Render locally only for development:
 
 ```sh
-uv run python -m scam_autopsy.render content/01-house-wire.json --output build/episode.mp4
+uv run python -m scam_autopsy.render content/01-house-wire-r2.json --output build/episode.mp4
 ```
 
 The workflows run the same locked dependencies. Code-native brand assets in `brand/` can be regenerated with the included Pillow script. The Kokoro model revision and voice are pinned in the renderer. Do not commit a local token or put one in a workflow input.
