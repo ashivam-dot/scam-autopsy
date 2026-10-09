@@ -1,0 +1,106 @@
+{
+  "id": "ftc-0ff71b1d80c2",
+  "title": "Watch Out For Fake QR Codes On Parking Meters",
+  "hook": "Scammers cover legitimate parking meter codes with their own fraudulent QR codes.",
+  "source_urls": [
+    "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet"
+  ],
+  "description": "An FTC-documented pattern explains how scammers place fraudulent QR codes on parking meters. Learn how to inspect links and protect your device. https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet",
+  "format": "short",
+  "scenes": [
+    {
+      "narration": "Scammers cover legitimate parking meter codes with their own fraudulent QR codes.",
+      "heading": "Parking Meter QR Codes",
+      "visual": "flow",
+      "items": [
+        "Covered meters",
+        "Scam codes"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "Ever tried to pay for parking and discovered you need to scan a QR code to pay? It seems like a convenient way to pay, but it turns out scammers like using QR codes, too. People have reported scammers covering up legit QR codes on parking meters with a QR code of their own. If you scan that scammy QR code, it could take you to a fake site designed to steal your money, your personal information, or both. So, how can you protect yourself from these scams? Follow these steps: Inspect the URL link"
+    },
+    {
+      "narration": "Scanning that scammy code could take you to a fake site targeting your money.",
+      "heading": "Fake Sites",
+      "visual": "warning",
+      "items": [
+        "Stolen money",
+        "Stolen info"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "Ever tried to pay for parking and discovered you need to scan a QR code to pay? It seems like a convenient way to pay, but it turns out scammers like using QR codes, too. People have reported scammers covering up legit QR codes on parking meters with a QR code of their own. If you scan that scammy QR code, it could take you to a fake site designed to steal your money, your personal information, or both. So, how can you protect yourself from these scams? Follow these steps: Inspect the URL link"
+    },
+    {
+      "narration": "Many QR readers preview the destination link before you actually click to open it.",
+      "heading": "Preview The Link",
+      "visual": "cards",
+      "items": [
+        "QR readers"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "or both. So, how can you protect yourself from these scams? Follow these steps: Inspect the URL link . Many QR readers preview the link they will send you to. Make sure there are no spelling mistakes or switched letters in the link before you click. Protect your phone. Update your phone's operating system (OS) and apps to help prevent scammy links from turning into a hack: Apple Support: Update your iPhone or iPad Android Help: Check & update your Android version Use strong passwords for your"
+    },
+    {
+      "narration": "Inspect URLs carefully and check for any spelling mistakes or switched letters inside.",
+      "heading": "Inspect URLs",
+      "visual": "cards",
+      "items": [
+        "Check spelling",
+        "Look for errors"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "or both. So, how can you protect yourself from these scams? Follow these steps: Inspect the URL link . Many QR readers preview the link they will send you to. Make sure there are no spelling mistakes or switched letters in the link before you click. Protect your phone. Update your phone's operating system (OS) and apps to help prevent scammy links from turning into a hack: Apple Support: Update your iPhone or iPad Android Help: Check & update your Android version Use strong passwords for your"
+    },
+    {
+      "narration": "Update your phone operating system and apps to help prevent scam links turning into hacks.",
+      "heading": "Protect Your Phone",
+      "visual": "cards",
+      "items": [
+        "Update OS",
+        "Update apps"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "or both. So, how can you protect yourself from these scams? Follow these steps: Inspect the URL link . Many QR readers preview the link they will send you to. Make sure there are no spelling mistakes or switched letters in the link before you click. Protect your phone. Update your phone's operating system (OS) and apps to help prevent scammy links from turning into a hack: Apple Support: Update your iPhone or iPad Android Help: Check & update your Android version Use strong passwords for your"
+    },
+    {
+      "narration": "If you reached out through a fake site, do not interact further with them.",
+      "heading": "Stop Contact",
+      "visual": "cards",
+      "items": [
+        "Avoid contact"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "your iPhone or iPad Android Help: Check & update your Android version Use strong passwords for your accounts. Protect your online accounts with strong passwords and multi-factor authentication . Think you scanned a bad QR code? Follow these steps: Don’t interact with the scammer: If you reach out to someone through the website you think is fake, they may try to get money or sensitive information out of you. Change your password: If you entered credentials like your username or password,"
+    },
+    {
+      "narration": "Review bank statements and report suspicious activity to the FTC at ReportFraud.ftc.gov.",
+      "heading": "Report Fraud",
+      "visual": "cards",
+      "items": [
+        "Check statements",
+        "ReportFraud.ftc.gov"
+      ],
+      "label": "Illustration",
+      "evidence_quote": "out of you. Change your password: If you entered credentials like your username or password, immediately change them wherever you use the same password for other accounts. Review your transactions: Check your credit card and bank statements to spot transactions you didn’t make. Then, report it to the FTC at ReportFraud.ftc.gov ."
+    }
+  ],
+  "approved": true,
+  "review": {
+    "reviewer": "gemma-4-31b-it",
+    "writer": "gemini-3.5-flash-lite",
+    "source_checked_at": "2026-10-09T08:34:38.368649+00:00",
+    "notes": "All claims, visuals, and narration are fully supported by the source text. Original wording is used throughout, and the hook is spoken verbatim in the first scene.",
+    "checks": {
+      "factual_fidelity": true,
+      "practical_advice": true,
+      "quality": true,
+      "diversity": true,
+      "no_invented_incidents": true,
+      "scene_evidence_complete": true,
+      "conditions_preserved": true,
+      "visual_disclosure": true,
+      "original_narration": true
+    },
+    "source_sha256": "8ac9adea46648de7175165468d3aa630d12a6b5a7777d74a5346496f75ba01d1"
+  }
+}
