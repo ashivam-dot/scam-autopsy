@@ -20,6 +20,9 @@ ROOT = Path(__file__).resolve().parents[1]
 CHANNEL_ID = "UCz0W-lSVvEeWYufkUVaVUKA"
 ACTIVE = {"reserved", "uploading", "processing"}
 MIN_ENGAGED_VIEWS = 100
+READY_LOW_WATERMARK = 4
+# Daily refills retry a failed research run; free-tier 429/503s clear on their own.
+RESEARCH_RETRY_GRACE = timedelta(hours=72)
 SOURCE_HOSTS = {"www.ic3.gov", "ic3.gov", "www.fbi.gov", "fbi.gov", "consumer.ftc.gov",
                 "www.ftc.gov", "ftc.gov", "www.cisa.gov", "cisa.gov"}
 
@@ -128,6 +131,7 @@ def assess(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, Any]:
             content[case["id"]] = case
 
     alerts: list[dict[str, str]] = []
+    warnings: list[dict[str, str]] = []
 
     def alert(code: str, detail: str = "") -> None:
         alerts.append({"code": code, "detail": detail})
@@ -179,7 +183,11 @@ def assess(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, Any]:
     if research:
         research_status = research.get("status")
         if research_status == "failed":
-            alert("research_failed")
+            since = _utc(research.get("failing_since"))
+            if len(ready) < READY_LOW_WATERMARK or since is None or now - since > RESEARCH_RETRY_GRACE:
+                alert("research_failed")
+            else:
+                warnings.append({"code": "research_retrying", "detail": ""})
             checked = _utc(research.get("checked_at"))
             last_failure = {"component": "research", "at": checked.isoformat() if checked else None,
                             "status": "failed"}
@@ -221,6 +229,7 @@ def assess(root: Path = ROOT, *, now: datetime | None = None) -> dict[str, Any]:
                    "eligible_comparisons": len(eligible)},
         "last_pipeline_failure": last_failure,
         "alerts": alerts,
+        "warnings": warnings,
     }
 
 

@@ -46,6 +46,8 @@ COOLDOWN_HOURS = 6
 MAX_SOURCE_COOLDOWNS = 40
 TIMEOUT = (5, 25)
 GENERATION_TIMEOUT = (10, 90)
+# A high-thinking review of the whole article can outlast 90 seconds (gemma-4-31b-it did).
+REVIEW_TIMEOUT = (10, 180)
 USER_AGENT = "Mozilla/5.0 (compatible; ScamAutopsyResearch/1.0; +https://consumer.ftc.gov/)"
 ALLOWED_HOSTS = {"consumer.ftc.gov", "www.ftc.gov", "www.fbi.gov", "www.ic3.gov", "www.cisa.gov"}
 ARTICLE_PATH = re.compile(r"/consumer-alerts/20\d{2}/\d{2}/[a-z0-9-]+/?\Z")
@@ -325,7 +327,7 @@ def _gemini_json(session: requests.Session, key: str, model: str, prompt: str,
         raise ResearchError("Gemini generation budget exhausted")
     budget[0] += 1
     response = session.post(GENERATION_URL.format(model=model), headers={"x-goog-api-key": key},
-                            json=payload, timeout=GENERATION_TIMEOUT)
+                            json=payload, timeout=REVIEW_TIMEOUT if role == "reviewer" else GENERATION_TIMEOUT)
     if response.status_code == 404:
         raise ModelUnavailable("Gemini listed model unavailable for generation")
     if response.status_code in (429, 500, 502, 503, 504):
@@ -572,6 +574,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
                                  "generation_calls": 0})
         return []
     prior_state = state
+    failing_since = (prior_state.get("failing_since") or prior_state.get("checked_at")
+                     if prior_state.get("status") == "failed" else None)
     state = {k: v for k, v in state.items() if k in ("used_source_urls", "used_source_hashes",
                                                     "model_unavailable_until")}
     checked = datetime.now(timezone.utc)
@@ -596,6 +600,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
     def save_state() -> None:
         state["model_transient_until"] = _model_cooldowns(state, checked)
         state["source_rejection_until"] = _source_cooldowns(state, checked)
+        if state.get("status") == "failed":
+            state["failing_since"] = failing_since if isinstance(failing_since, str) else state["checked_at"]
         _write_json(state_file, state)
 
     try:

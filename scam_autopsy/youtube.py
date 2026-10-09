@@ -59,6 +59,12 @@ def marker(case):
     return "scam-autopsy:" + case["id"]
 
 
+def video_status(privacy):
+    # videos.update replaces the whole status part; an omitted field resets (embedding turns off).
+    return {"privacyStatus": privacy, "selfDeclaredMadeForKids": False, "containsSyntheticMedia": True,
+            "embeddable": True, "publicStatsViewable": True, "license": "youtube"}
+
+
 def recent(api, channel):
     playlist = channel["contentDetails"]["relatedPlaylists"]["uploads"]
     rows = api.playlistItems().list(part="contentDetails", playlistId=playlist, maxResults=50).execute().get("items", [])
@@ -91,7 +97,7 @@ def upload_private(api, case, media: Path):
     identity(api)
     body = {
         "snippet": {"title": case["title"], "description": description(case), "tags": ["Scam Autopsy", "scam awareness", marker(case)], "categoryId": "27", "defaultLanguage": "en", "defaultAudioLanguage": "en"},
-        "status": {"privacyStatus": "private", "selfDeclaredMadeForKids": False, "containsSyntheticMedia": True},
+        "status": video_status("private"),
     }
     request = api.videos().insert(part="snippet,status", body=body, notifySubscribers=False, media_body=MediaFileUpload(str(media), mimetype="video/mp4", chunksize=4 * 1024 * 1024, resumable=True))
     response = None
@@ -129,8 +135,7 @@ def finalize(api, case, video_id, publish=True, max_wait=420, marker_wait=90):
             raise RuntimeError("Video still processing; next cloud run will reconcile")
         time.sleep(10)
     if publish and video["status"]["privacyStatus"] != "public":
-        status = {"privacyStatus": "public", "selfDeclaredMadeForKids": False, "containsSyntheticMedia": True}
-        api.videos().update(part="status", body={"id": video_id, "status": status}).execute()
+        api.videos().update(part="status", body={"id": video_id, "status": video_status("public")}).execute()
     verified = api.videos().list(part="status,snippet,contentDetails", id=video_id).execute()["items"][0]
     expected = "public" if publish else "private"
     if verified["snippet"]["channelId"] != CHANNEL_ID or marker(case) not in verified["snippet"].get("tags", []):

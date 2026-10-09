@@ -129,6 +129,23 @@ class HealthTests(unittest.TestCase):
                          {"component": "research", "at": NOW.isoformat(), "status": "failed"})
         self.assertNotIn("secret key", json.dumps(report))
 
+    def test_recent_research_failure_with_healthy_stock_is_a_warning(self):
+        for i in range(3, 5):
+            self.write(f"content/case-{i}.json", case(f"case-{i}"))
+        recent = {"status": "failed", "checked_at": NOW.isoformat(),
+                  "failing_since": (NOW - timedelta(hours=20)).isoformat()}
+        self.write("state/research.json", recent)
+        report = health.assess(self.root, now=NOW)
+        self.assertEqual(report["status"], "healthy")
+        self.assertEqual(report["warnings"], [{"code": "research_retrying", "detail": ""}])
+        self.assertEqual(report["last_pipeline_failure"]["component"], "research")
+
+        for state in (recent | {"failing_since": (NOW - timedelta(hours=73)).isoformat()},
+                      {"status": "failed", "checked_at": NOW.isoformat()}):
+            with self.subTest(state=state):
+                self.write("state/research.json", state)
+                self.assertIn("research_failed", self.codes(health.assess(self.root, now=NOW)))
+
     def test_partial_research_exhausted_alerts_when_queue_low(self):
         ledger = self.read("state/publishing.json")
         ledger["cases"]["case-0"] = self.record("case-0")

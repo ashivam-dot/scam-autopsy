@@ -8,10 +8,9 @@ from dataclasses import asdict, dataclass
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from .health import ROOT, assess
+from .health import READY_LOW_WATERMARK, ROOT, assess
 
 
-READY_LOW_WATERMARK = 4
 READY_CAP = 8
 MAX_SCRIPTS_PER_RUN = 2  # research.py enforces this and four model calls.
 

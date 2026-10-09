@@ -17,15 +17,15 @@ concurrency:
 jobs:
   insights:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 25
     env:
       YOUTUBE_OAUTH_JSON: ${{ secrets.YOUTUBE_OAUTH_JSON }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: main
-      - uses: astral-sh/setup-uv@v6
+      - uses: astral-sh/setup-uv@v7
         with:
           python-version: '3.12'
       - name: Install lightweight research dependencies
@@ -47,6 +47,8 @@ jobs:
         run: python -m scam_autopsy.refill_decision
       - name: Refill reviewed scripts when due
         if: ${{ always() && steps.refill.outputs.refill == 'true' }}
+        # state/research.json records the outcome; the health step decides whether it needs attention.
+        continue-on-error: true
         env:
           REFILL_LIMIT: ${{ steps.refill.outputs.limit }}
         run: python -m scam_autopsy.research --limit "$REFILL_LIMIT"

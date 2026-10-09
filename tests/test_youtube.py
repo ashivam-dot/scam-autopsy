@@ -68,6 +68,20 @@ def test_finalize_retries_transient_missing_marker_on_own_channel(monkeypatch):
     api.videos.return_value.update.assert_not_called()
 
 
+def test_publishing_keeps_embedding_and_disclosure_in_replaced_status():
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    marked = _video(value, tags=[youtube.marker(value)])
+    api.videos.return_value.list.return_value.execute.side_effect = [
+        {"items": [marked]}, {"items": [_video(value, tags=[youtube.marker(value)], privacy="public")]}
+    ]
+    assert youtube.finalize(api, value, "video", publish=True)["privacy"] == "public"
+    status = api.videos.return_value.update.call_args.kwargs["body"]["status"]
+    assert status == youtube.video_status("public")
+    assert status["embeddable"] is True and status["containsSyntheticMedia"] is True
+
+
 def test_finalize_missing_marker_expires_without_public_write():
     value = case()
     api = MagicMock()

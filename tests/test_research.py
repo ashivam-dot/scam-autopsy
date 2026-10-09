@@ -322,6 +322,26 @@ class ResearchRunTests(unittest.TestCase):
         session.post.assert_not_called()
         self.assertEqual(json.loads(self.state.read_text())["status"], "failed")
 
+    def test_repeated_failure_keeps_first_failure_time_and_success_clears_it(self):
+        def run_failed():
+            research.run_research(content_dir=self.content, state_file=self.state, session=Mock(), key="")
+            return json.loads(self.state.read_text())
+
+        first = run_failed()
+        self.assertEqual(first["failing_since"], first["checked_at"])
+        self.assertEqual(run_failed()["failing_since"], first["checked_at"])
+
+        self.state.write_text(json.dumps({"status": "failed", "checked_at": "2026-10-08T19:01:57+00:00"}))
+        self.assertEqual(run_failed()["failing_since"], "2026-10-08T19:01:57+00:00")
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "New scam")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=[script(URL), review()]):
+            self.assertEqual(len(self.run_it()), 1)
+        self.assertNotIn("failing_since", json.loads(self.state.read_text()))
+
     def test_corrupt_state_fails_closed_before_generation(self):
         self.state.parent.mkdir()
         self.state.write_text("{broken")
@@ -997,6 +1017,8 @@ class ResearchRunTests(unittest.TestCase):
         self.assertEqual(session.post.call_args.kwargs["json"]["generationConfig"]["thinkingConfig"],
                          {"thinkingLevel": "low"})
         self.assertEqual(session.post.call_args.kwargs["timeout"], (10, 90))
+        research._gemini_json(session, "test-key", "gemma-4-31b-it", "test", [0], 0.1, "reviewer")
+        self.assertEqual(session.post.call_args.kwargs["timeout"], (10, 180))
 
     def test_flash_lite_uses_json_without_unverified_thinking_config(self):
         response = Mock(status_code=200)
