@@ -49,11 +49,12 @@
       "verified_at": "2026-10-08T18:37:45.698629+00:00"
     },
     "02-qr-parcel": {
-      "status": "reserved",
+      "status": "uploading",
       "reserved_at": "2026-10-10T17:44:06.361236+00:00",
       "path": "content/02-qr-parcel.json",
       "content_sha256": "5b891669f64a7a6d985b8690b1ecb2c4916e098eeac407bd1277daae98ab1c80",
-      "intended_private": false
+      "intended_private": false,
+      "upload_started_at": "2026-10-10T17:44:41.596000+00:00"
     }
   }
 }
