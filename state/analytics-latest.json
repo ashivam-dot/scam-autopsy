@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-10-10",
+  "as_of": "2026-10-11",
   "window": {
-    "start": "2026-09-11",
-    "end": "2026-10-08"
+    "start": "2026-09-12",
+    "end": "2026-10-09"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
@@ -10,9 +10,23 @@
     "viewCount": "140",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
-    "videoCount": "1"
+    "videoCount": "2"
   },
   "videos": [
+    {
+      "id": "uEwovArymVc",
+      "title": "The QR Code on a Package You Never Ordered",
+      "published_at": "2026-10-10T17:45:07Z",
+      "privacy": "public",
+      "duration": "PT54S",
+      "statistics": {
+        "viewCount": "8",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
     {
       "id": "TWwcOVf3M8M",
       "title": "The Tractor That Never Arrived: A Fake Seller Trap",
@@ -34,7 +48,7 @@
       "privacy": "public",
       "duration": "PT51S",
       "statistics": {
-        "viewCount": "13",
+        "viewCount": "16",
         "likeCount": "1",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -170,6 +184,18 @@
   ],
   "analytics": [
     {
+      "video": "cgnDylK2Xm8",
+      "views": 11,
+      "engagedViews": 6,
+      "averageViewDuration": 15,
+      "averageViewPercentage": 30.879999999999995,
+      "likes": 1,
+      "comments": 0,
+      "shares": 1,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
       "video": "R1XyOimFHxE",
       "views": 2,
       "engagedViews": 0,
@@ -194,6 +220,18 @@
       "subscribersLost": 0
     },
     {
+      "video": "uHNks3I6tM4",
+      "views": 1,
+      "engagedViews": 1,
+      "averageViewDuration": 13,
+      "averageViewPercentage": 27.43,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
       "video": "y8amwVeM8Pc",
       "views": 1,
       "engagedViews": 0,
@@ -208,6 +246,18 @@
     {
       "video": "UKJNgV3HRPQ",
       "views": 1,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "TWwcOVf3M8M",
+      "views": 0,
       "engagedViews": 0,
       "averageViewDuration": 0,
       "averageViewPercentage": 0,
