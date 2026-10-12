@@ -1,13 +1,13 @@
 {
-  "as_of": "2026-10-11",
+  "as_of": "2026-10-12",
   "window": {
-    "start": "2026-09-12",
-    "end": "2026-10-09"
+    "start": "2026-09-13",
+    "end": "2026-10-10"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
     "title": "Scam Autopsy",
-    "viewCount": "140",
+    "viewCount": "27",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
     "videoCount": "2"
@@ -20,8 +20,8 @@
       "privacy": "public",
       "duration": "PT54S",
       "statistics": {
-        "viewCount": "8",
-        "likeCount": "0",
+        "viewCount": "18",
+        "likeCount": "1",
         "dislikeCount": "0",
         "favoriteCount": "0",
         "commentCount": "0"
@@ -185,7 +185,7 @@
   "analytics": [
     {
       "video": "cgnDylK2Xm8",
-      "views": 11,
+      "views": 13,
       "engagedViews": 6,
       "averageViewDuration": 15,
       "averageViewPercentage": 30.879999999999995,

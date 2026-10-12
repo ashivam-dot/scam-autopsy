@@ -19,21 +19,10 @@
   ],
   "model_transient_until": {},
   "source_rejection_until": {
-    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know": "2026-10-09T14:34:38.368649+00:00",
-    "https://consumer.ftc.gov/consumer-alerts/2026/09/see-qr-code-parked-somewhere-dont-scan-ityet": "2026-10-09T09:38:29.293484+00:00"
+    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know": "2026-10-12T14:38:58.415337+00:00"
   },
-  "checked_at": "2026-10-09T08:34:38.368649+00:00",
+  "checked_at": "2026-10-12T08:38:58.415337+00:00",
   "generation_attempts": [
-    {
-      "model": "gemini-3.5-flash-lite",
-      "status": "success",
-      "detail": "writer"
-    },
-    {
-      "model": "gemma-4-31b-it",
-      "status": "success",
-      "detail": "reviewer"
-    },
     {
       "model": "gemini-3.5-flash-lite",
       "status": "success",
@@ -43,7 +32,7 @@
   "rejected": [
     {
       "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
-      "reason": "writer validation: scene label invalid"
+      "reason": "writer validation: narration copies source prose (41 of 96 spoken words)"
     }
   ],
   "model_order": [
@@ -74,8 +63,8 @@
     "gemini-3.6-flash",
     "gemini-3.8-flash"
   ],
-  "status": "partial_success",
-  "generated": 1,
-  "generation_calls": 3,
-  "stopped_reason": ""
+  "status": "failed",
+  "generation_calls": 1,
+  "error": "no candidate passed review",
+  "failing_since": "2026-10-12T08:38:58.415337+00:00"
 }
