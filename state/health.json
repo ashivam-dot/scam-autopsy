@@ -1,7 +1,7 @@
 {
-  "checked_at": "2026-10-11T08:32:08.900773+00:00",
+  "checked_at": "2026-10-12T08:39:03.023785+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
-  "status": "healthy",
+  "status": "needs_attention",
   "counts": {
     "reviewed_stock": 8,
     "ready_queue": 5,
@@ -11,7 +11,21 @@
     "analytics_rows": 7,
     "eligible_comparisons": 0
   },
-  "last_pipeline_failure": null,
-  "alerts": [],
-  "warnings": []
+  "last_pipeline_failure": {
+    "component": "research",
+    "at": "2026-10-12T08:38:58.415337+00:00",
+    "status": "failed"
+  },
+  "alerts": [
+    {
+      "code": "active_over_24h",
+      "detail": "02-qr-parcel"
+    }
+  ],
+  "warnings": [
+    {
+      "code": "research_retrying",
+      "detail": ""
+    }
+  ]
 }
