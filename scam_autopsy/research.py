@@ -410,6 +410,19 @@ def _generate_available(session: requests.Session, key: str, models: tuple[str, 
     raise ResearchError("two distinct available free-tier Gemini models are required" + cause)
 
 
+REWRITE = ("\n\nYour previous draft for this source was refused by the checks: {problem}. Write a new draft that "
+           "fixes exactly that while keeping every other rule above.")
+
+
+def _validation_problem(candidate: dict[str, Any], url: str, source: str, passages: tuple[str, ...]) -> str:
+    try:
+        _materialize_scene_quotes(candidate, passages)
+        validate_script(candidate, url, source)
+    except ResearchError as exc:
+        return str(exc)
+    return ""
+
+
 def _writer_prompt(url: str, title: str, passages: tuple[str, ...]) -> str:
     citations = "\n".join(f"[{index}] {json.dumps(passage, ensure_ascii=False)}"
                           for index, passage in enumerate(passages, 1))
@@ -655,11 +668,20 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             except (ResearchError, requests.RequestException) as exc:
                 stopped_reason = _safe_error(exc)
                 break
-            try:
-                _materialize_scene_quotes(candidate, passages)
-                validate_script(candidate, url, source)
-            except ResearchError as exc:
-                rejected.append({"source_url": url, "reason": f"writer validation: {exc}"})
+            problem = _validation_problem(candidate, url, source, passages)
+            if problem and budget[0] + 2 <= MAX_GENERATION_CALLS:
+                try:
+                    candidate, writer_model = _generate_available(
+                        session, key, writer_models, unavailable,
+                        _writer_prompt(url, title, passages) + REWRITE.format(problem=problem), budget, 0.6,
+                        temporary_unavailable, delayed, attempts, "writer", reserve_calls=1,
+                        reviewer_pool=reviewer_models)
+                except (ResearchError, requests.RequestException) as exc:
+                    stopped_reason = _safe_error(exc)
+                    break
+                problem = _validation_problem(candidate, url, source, passages)
+            if problem:
+                rejected.append({"source_url": url, "reason": f"writer validation: {problem}"})
                 continue
             # The model controls prose only; ignore any additional generated fields.
             candidate = {key: candidate[key] for key in
@@ -704,7 +726,8 @@ def run_research(limit: int = 2, *, content_dir: Path = ROOT / "content",
             used_hashes.add(digest)
             used_ids.add(case_id)
         if not pending:
-            status = "failed" if rejected or stopped_reason else "no_new_script"
+            # A source the gates refused is not an outage; an empty queue still alerts in health.
+            status = "failed" if stopped_reason else "no_new_script"
             state.update(status=status, generation_calls=budget[0], rejected=rejected,
                          error=stopped_reason or ("no candidate passed review" if rejected else ""))
             save_state()

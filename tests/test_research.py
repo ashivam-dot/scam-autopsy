@@ -471,7 +471,7 @@ class ResearchRunTests(unittest.TestCase):
     def test_writer_rejection_tries_next_source_with_remaining_budget(self):
         first = script(URL)
         first["scenes"][0]["evidence_quote"] = "invented quote"
-        generated = iter((first, script(OTHER_URL), review()))
+        generated = iter((first, json.loads(json.dumps(first)), script(OTHER_URL), review()))
 
         def generate(*args):
             budget = args[4]
@@ -485,11 +485,33 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=generate) as model:
             paths = self.run_it()
         self.assertEqual(len(paths), 1)
-        self.assertEqual(model.call_count, 3)
+        self.assertEqual(model.call_count, 4)
         state = json.loads(self.state.read_text())
-        self.assertEqual(state["generation_calls"], 3)
+        self.assertEqual(state["generation_calls"], 4)
         self.assertEqual(state["status"], "partial_success")
         self.assertIn("writer validation", state["rejected"][0]["reason"])
+
+    def test_a_refused_draft_is_rewritten_once_with_the_reason(self):
+        first = script(URL)
+        first["scenes"][0]["evidence_quote"] = "invented quote"
+        generated = iter((first, script(URL), review()))
+        prompts = []
+
+        def generate(*args):
+            args[4][0] += 1
+            prompts.append(args[3])
+            return next(generated)
+
+        with patch.object(research, "_model_names", return_value=research.FREE_TIER_CANDIDATES), \
+             patch.object(research, "discover_articles", return_value=[(URL, "Scam one")]), \
+             patch.object(research, "_get_public", return_value=b"html"), \
+             patch.object(research, "extract_article", return_value=SOURCE), \
+             patch.object(research, "_gemini_json", side_effect=generate):
+            paths = self.run_it(limit=1)
+        self.assertEqual(len(paths), 1)
+        self.assertIn("refused by the checks", prompts[1])
+        self.assertNotIn("refused by the checks", prompts[0])
+        self.assertEqual(json.loads(self.state.read_text())["status"], "passed")
 
     def test_listed_404_model_falls_back_and_is_excluded_for_seven_days(self):
         used_models = []
@@ -888,7 +910,7 @@ class ResearchRunTests(unittest.TestCase):
              patch.object(research, "_gemini_json", side_effect=[script(URL), weak_review]):
             self.assertEqual(self.run_it(limit=1), [])
         state = json.loads(self.state.read_text())
-        self.assertEqual(state["status"], "failed")
+        self.assertEqual(state["status"], "no_new_script")
         self.assertIn("conditions_preserved", state["rejected"][0]["reason"])
         self.assertEqual(list(self.content.glob("*.json")), [])
 
