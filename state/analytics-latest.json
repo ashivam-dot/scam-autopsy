@@ -1,13 +1,13 @@
 {
-  "as_of": "2026-10-12",
+  "as_of": "2026-10-13",
   "window": {
-    "start": "2026-09-13",
-    "end": "2026-10-10"
+    "start": "2026-09-14",
+    "end": "2026-10-11"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
     "title": "Scam Autopsy",
-    "viewCount": "27",
+    "viewCount": "30",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
     "videoCount": "2"
@@ -20,7 +20,7 @@
       "privacy": "public",
       "duration": "PT54S",
       "statistics": {
-        "viewCount": "18",
+        "viewCount": "25",
         "likeCount": "1",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -48,7 +48,7 @@
       "privacy": "public",
       "duration": "PT51S",
       "statistics": {
-        "viewCount": "16",
+        "viewCount": "17",
         "likeCount": "1",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -185,7 +185,7 @@
   "analytics": [
     {
       "video": "cgnDylK2Xm8",
-      "views": 13,
+      "views": 16,
       "engagedViews": 6,
       "averageViewDuration": 15,
       "averageViewPercentage": 30.879999999999995,
@@ -196,11 +196,11 @@
       "subscribersLost": 0
     },
     {
-      "video": "R1XyOimFHxE",
-      "views": 2,
-      "engagedViews": 0,
-      "averageViewDuration": 0,
-      "averageViewPercentage": 0,
+      "video": "uEwovArymVc",
+      "views": 8,
+      "engagedViews": 2,
+      "averageViewDuration": 3,
+      "averageViewPercentage": 5.93,
       "likes": 0,
       "comments": 0,
       "shares": 0,
@@ -220,11 +220,11 @@
       "subscribersLost": 0
     },
     {
-      "video": "uHNks3I6tM4",
-      "views": 1,
-      "engagedViews": 1,
-      "averageViewDuration": 13,
-      "averageViewPercentage": 27.43,
+      "video": "R1XyOimFHxE",
+      "views": 2,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
       "likes": 0,
       "comments": 0,
       "shares": 0,
@@ -237,6 +237,18 @@
       "engagedViews": 0,
       "averageViewDuration": 0,
       "averageViewPercentage": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "uHNks3I6tM4",
+      "views": 1,
+      "engagedViews": 1,
+      "averageViewDuration": 13,
+      "averageViewPercentage": 27.43,
       "likes": 0,
       "comments": 0,
       "shares": 0,
