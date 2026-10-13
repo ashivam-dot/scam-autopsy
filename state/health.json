@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-12T08:39:03.023785+00:00",
+  "checked_at": "2026-10-13T08:38:19.279171+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
   "status": "needs_attention",
   "counts": {
@@ -8,12 +8,12 @@
     "confirmed_public_cases": 1,
     "private_previews": 2,
     "active_reservations": 1,
-    "analytics_rows": 7,
+    "analytics_rows": 8,
     "eligible_comparisons": 0
   },
   "last_pipeline_failure": {
     "component": "research",
-    "at": "2026-10-12T08:38:58.415337+00:00",
+    "at": "2026-10-13T08:38:13.033868+00:00",
     "status": "failed"
   },
   "alerts": [
