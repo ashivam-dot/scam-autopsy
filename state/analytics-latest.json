@@ -1,13 +1,13 @@
 {
-  "as_of": "2026-10-13",
+  "as_of": "2026-10-14",
   "window": {
-    "start": "2026-09-14",
-    "end": "2026-10-11"
+    "start": "2026-09-15",
+    "end": "2026-10-12"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
     "title": "Scam Autopsy",
-    "viewCount": "30",
+    "viewCount": "43",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
     "videoCount": "2"
@@ -20,8 +20,8 @@
       "privacy": "public",
       "duration": "PT54S",
       "statistics": {
-        "viewCount": "25",
-        "likeCount": "1",
+        "viewCount": "27",
+        "likeCount": "2",
         "dislikeCount": "0",
         "favoriteCount": "0",
         "commentCount": "0"
@@ -184,6 +184,18 @@
   ],
   "analytics": [
     {
+      "video": "uEwovArymVc",
+      "views": 18,
+      "engagedViews": 9,
+      "averageViewDuration": 13,
+      "averageViewPercentage": 24.36,
+      "likes": 1,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
       "video": "cgnDylK2Xm8",
       "views": 16,
       "engagedViews": 6,
@@ -196,11 +208,11 @@
       "subscribersLost": 0
     },
     {
-      "video": "uEwovArymVc",
-      "views": 8,
-      "engagedViews": 2,
-      "averageViewDuration": 3,
-      "averageViewPercentage": 5.93,
+      "video": "R1XyOimFHxE",
+      "views": 2,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
       "likes": 0,
       "comments": 0,
       "shares": 0,
@@ -220,30 +232,6 @@
       "subscribersLost": 0
     },
     {
-      "video": "R1XyOimFHxE",
-      "views": 2,
-      "engagedViews": 0,
-      "averageViewDuration": 0,
-      "averageViewPercentage": 0,
-      "likes": 0,
-      "comments": 0,
-      "shares": 0,
-      "subscribersGained": 0,
-      "subscribersLost": 0
-    },
-    {
-      "video": "y8amwVeM8Pc",
-      "views": 1,
-      "engagedViews": 0,
-      "averageViewDuration": 0,
-      "averageViewPercentage": 0,
-      "likes": 0,
-      "comments": 0,
-      "shares": 0,
-      "subscribersGained": 0,
-      "subscribersLost": 0
-    },
-    {
       "video": "uHNks3I6tM4",
       "views": 1,
       "engagedViews": 1,
@@ -256,7 +244,7 @@
       "subscribersLost": 0
     },
     {
-      "video": "UKJNgV3HRPQ",
+      "video": "y8amwVeM8Pc",
       "views": 1,
       "engagedViews": 0,
       "averageViewDuration": 0,

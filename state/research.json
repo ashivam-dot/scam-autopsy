@@ -18,23 +18,10 @@
     "8ac9adea46648de7175165468d3aa630d12a6b5a7777d74a5346496f75ba01d1"
   ],
   "model_transient_until": {},
-  "source_rejection_until": {
-    "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know": "2026-10-13T14:38:13.033868+00:00"
-  },
-  "checked_at": "2026-10-13T08:38:13.033868+00:00",
-  "generation_attempts": [
-    {
-      "model": "gemini-3.5-flash-lite",
-      "status": "success",
-      "detail": "writer"
-    }
-  ],
-  "rejected": [
-    {
-      "source_url": "https://consumer.ftc.gov/consumer-alerts/2026/09/scammers-are-spoofing-car-dealership-websites-what-you-need-know",
-      "reason": "writer validation: narration copies source prose (72 of 106 spoken words)"
-    }
-  ],
+  "source_rejection_until": {},
+  "checked_at": "2026-10-14T08:48:33.884245+00:00",
+  "generation_attempts": [],
+  "rejected": [],
   "model_order": [
     "gemini-3.7-flash",
     "gemini-3.6-flash",
@@ -63,8 +50,7 @@
     "gemini-3.6-flash",
     "gemini-3.8-flash"
   ],
-  "status": "failed",
-  "generation_calls": 1,
-  "error": "no candidate passed review",
-  "failing_since": "2026-10-12T08:38:58.415337+00:00"
+  "status": "no_new_script",
+  "generation_calls": 0,
+  "error": ""
 }
