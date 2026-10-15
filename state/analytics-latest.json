@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-10-14",
+  "as_of": "2026-10-15",
   "window": {
-    "start": "2026-09-15",
-    "end": "2026-10-12"
+    "start": "2026-09-16",
+    "end": "2026-10-13"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
@@ -20,7 +20,7 @@
       "privacy": "public",
       "duration": "PT54S",
       "statistics": {
-        "viewCount": "27",
+        "viewCount": "28",
         "likeCount": "2",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -185,10 +185,10 @@
   "analytics": [
     {
       "video": "uEwovArymVc",
-      "views": 18,
-      "engagedViews": 9,
-      "averageViewDuration": 13,
-      "averageViewPercentage": 24.36,
+      "views": 25,
+      "engagedViews": 10,
+      "averageViewDuration": 12,
+      "averageViewPercentage": 23.39,
       "likes": 1,
       "comments": 0,
       "shares": 0,
@@ -197,10 +197,10 @@
     },
     {
       "video": "cgnDylK2Xm8",
-      "views": 16,
-      "engagedViews": 6,
-      "averageViewDuration": 15,
-      "averageViewPercentage": 30.879999999999995,
+      "views": 17,
+      "engagedViews": 7,
+      "averageViewDuration": 16,
+      "averageViewPercentage": 32.18,
       "likes": 1,
       "comments": 0,
       "shares": 1,
