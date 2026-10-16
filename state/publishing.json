@@ -64,6 +64,14 @@
       "title": "The QR Code on a Package You Never Ordered",
       "playlist_id": "PLX_Lm80OvRHE",
       "verified_at": "2026-10-13T17:49:26.405320+00:00"
+    },
+    "03-task-job": {
+      "status": "reserved",
+      "reserved_at": "2026-10-16T14:22:02.677809+00:00",
+      "path": "content/03-task-job.json",
+      "content_sha256": "5919a198cb3c685b3f23ba3646f6706072f47a59c3526d72238a64d675fec0ba",
+      "intended_private": false,
+      "public_confirmed_at": "2026-10-16T14:22:02.677901+00:00"
     }
   }
 }
