@@ -66,14 +66,22 @@
       "verified_at": "2026-10-13T17:49:26.405320+00:00"
     },
     "03-task-job": {
-      "status": "processing",
+      "status": "published",
       "reserved_at": "2026-10-16T14:22:02.677809+00:00",
       "path": "content/03-task-job.json",
       "content_sha256": "5919a198cb3c685b3f23ba3646f6706072f47a59c3526d72238a64d675fec0ba",
       "intended_private": false,
       "public_confirmed_at": "2026-10-16T14:22:02.677901+00:00",
       "upload_started_at": "2026-10-16T14:23:10.285106+00:00",
-      "video_id": "Eg4-4Tksw_8"
+      "video_id": "Eg4-4Tksw_8",
+      "url": "https://www.youtube.com/watch?v=Eg4-4Tksw_8",
+      "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
+      "privacy": "public",
+      "processing": "succeeded",
+      "duration": "PT54S",
+      "title": "The Work-From-Home Job That Charges You to Work",
+      "playlist_id": "PLX_Lm80OvRHE",
+      "verified_at": "2026-10-16T14:23:42.929216+00:00"
     }
   }
 }
