@@ -43,12 +43,43 @@ def durable_save(state, message):
             push_state(ROOT)
 
 
+def finish(api, state, case, video_id, make_public):
+    receipt = youtube.finalize(api, case, video_id, publish=make_public)
+    if make_public:
+        try:
+            receipt["playlist_id"] = youtube.file_in_playlist(api, video_id)
+        except Exception as exc:
+            receipt["playlist_error"] = type(exc).__name__
+    state["cases"][case["id"]].update(receipt, status="published" if make_public else "private", verified_at=now())
+    durable_save(state, "Verify " + receipt["privacy"] + " case " + case["id"])
+    return receipt
+
+
+def reconcile(state):
+    """Finish an already uploaded public case without rendering it again, so the run can publish the next one."""
+    if not os.environ.get("YOUTUBE_OAUTH_JSON"):
+        return
+    for case_id, record in list(state["cases"].items()):
+        if record["status"] != "processing" or not record.get("video_id") or record.get("intended_private") is not False:
+            continue
+        try:
+            case = youtube.validate(json.loads((ROOT / record["path"]).read_text()))
+            if record.get("content_sha256") != content_hash(case):
+                continue
+            api = youtube.client()
+            youtube.identity(api)
+            print(json.dumps({"reconciled": finish(api, state, case, record["video_id"], True)}))
+        except Exception as exc:
+            print(json.dumps({"reconcile_failed": case_id, "error": type(exc).__name__, "detail": str(exc)[:200]}))
+
+
 def reserve(case_id=None, *, private=False, public_confirmed=False):
     if private and public_confirmed:
         raise ValueError("A reservation cannot request both private and public")
     if public_confirmed and not case_id:
         raise ValueError("Explicit public promotion must name the exact case")
     state = read()
+    reconcile(state)
     cases = [youtube.validate(json.loads(p.read_text())) | {"path": str(p.relative_to(ROOT))} for p in sorted((ROOT / "content").glob("*.json")) if json.loads(p.read_text()).get("approved")]
     active = [i for i, r in state["cases"].items() if r["status"] in ("reserved", "uploading", "processing")]
     if len(active) > 1:
@@ -118,15 +149,7 @@ def publish(path, media, make_public=True):
         video_id = youtube.upload_private(api, case, Path(media))
         record.update(status="processing", video_id=video_id)
         durable_save(state, "Record private upload " + case["id"])
-    receipt = youtube.finalize(api, case, video_id, publish=make_public)
-    if make_public:
-        try:
-            receipt["playlist_id"] = youtube.file_in_playlist(api, video_id)
-        except Exception as exc:
-            receipt["playlist_error"] = type(exc).__name__
-    record.update(receipt, status="published" if make_public else "private", verified_at=now())
-    durable_save(state, "Verify " + receipt["privacy"] + " case " + case["id"])
-    print(json.dumps(receipt))
+    print(json.dumps(finish(api, state, case, video_id, make_public)))
 
 
 def stats():

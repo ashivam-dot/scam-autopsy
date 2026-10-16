@@ -82,6 +82,29 @@ def test_publishing_keeps_embedding_and_disclosure_in_replaced_status():
     assert status["embeddable"] is True and status["containsSyntheticMedia"] is True
 
 
+def test_publish_waits_for_lagging_privacy_readback(monkeypatch):
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    marked = _video(value, tags=[youtube.marker(value)])
+    public = _video(value, tags=[youtube.marker(value)], privacy="public")
+    api.videos.return_value.list.return_value.execute.side_effect = [
+        {"items": [marked]}, {"items": [marked]}, {"items": [marked]}, {"items": [public]}
+    ]
+    monkeypatch.setattr(youtube.time, "sleep", lambda seconds: None)
+    assert youtube.finalize(api, value, "video", publish=True)["privacy"] == "public"
+    assert api.videos.return_value.update.call_count == 1
+
+
+def test_privacy_readback_still_fails_after_its_bound(monkeypatch):
+    value = case()
+    api = MagicMock()
+    api.channels.return_value.list.return_value.execute.return_value = {"items": [{"id": youtube.CHANNEL_ID}]}
+    api.videos.return_value.list.return_value.execute.return_value = {"items": [_video(value, tags=[youtube.marker(value)])]}
+    with pytest.raises(RuntimeError, match="Privacy verification failed"):
+        youtube.finalize(api, value, "video", publish=True, privacy_wait=0)
+
+
 def test_finalize_missing_marker_expires_without_public_write():
     value = case()
     api = MagicMock()

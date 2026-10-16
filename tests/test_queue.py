@@ -83,6 +83,40 @@ def test_only_named_manual_public_confirmation_can_promote_private_case(queue):
     assert record["public_confirmed_at"]
 
 
+def test_uploaded_public_case_reconciles_and_the_run_moves_to_the_next_case(queue, monkeypatch):
+    first, second = queue
+    cli.reserve(first["id"])
+    state = cli.read()
+    state["cases"][first["id"]].update(status="processing", video_id="already-public", intended_private=False)
+    cli.write(cli.LEDGER, state)
+    monkeypatch.setenv("YOUTUBE_OAUTH_JSON", "{}")
+    monkeypatch.setattr(cli.youtube, "client", lambda *a: Mock())
+    monkeypatch.setattr(cli.youtube, "identity", lambda api: {"id": cli.youtube.CHANNEL_ID})
+    monkeypatch.setattr(cli.youtube, "file_in_playlist", lambda api, video_id: "playlist")
+    finalize = Mock(return_value={"video_id": "already-public", "privacy": "public",
+                                  "channel_id": cli.youtube.CHANNEL_ID, "processing": "succeeded"})
+    monkeypatch.setattr(cli.youtube, "finalize", finalize)
+
+    assert cli.reserve()["id"] == second["id"]
+    assert cli.read()["cases"][first["id"]]["status"] == "published"
+    assert finalize.call_args.args[2] == "already-public" and finalize.call_args.kwargs["publish"] is True
+
+
+def test_failed_reconcile_keeps_the_active_case(queue, monkeypatch):
+    first, _ = queue
+    cli.reserve(first["id"])
+    state = cli.read()
+    state["cases"][first["id"]].update(status="processing", video_id="still-private", intended_private=False)
+    cli.write(cli.LEDGER, state)
+    monkeypatch.setenv("YOUTUBE_OAUTH_JSON", "{}")
+    monkeypatch.setattr(cli.youtube, "client", lambda *a: Mock())
+    monkeypatch.setattr(cli.youtube, "identity", lambda api: {"id": cli.youtube.CHANNEL_ID})
+    monkeypatch.setattr(cli.youtube, "finalize", Mock(side_effect=RuntimeError("Privacy verification failed")))
+
+    assert cli.reserve()["id"] == first["id"]
+    assert cli.read()["cases"][first["id"]]["status"] == "processing"
+
+
 def test_legacy_interrupted_reservation_without_intent_defaults_private(queue):
     first, _ = queue
     cli.reserve(first["id"])

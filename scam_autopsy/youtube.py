@@ -106,7 +106,7 @@ def upload_private(api, case, media: Path):
     return response["id"]
 
 
-def finalize(api, case, video_id, publish=True, max_wait=420, marker_wait=90):
+def finalize(api, case, video_id, publish=True, max_wait=420, marker_wait=90, privacy_wait=120):
     identity(api)
     deadline = time.monotonic() + max_wait
     marker_deadline = min(deadline, time.monotonic() + marker_wait)
@@ -136,12 +136,18 @@ def finalize(api, case, video_id, publish=True, max_wait=420, marker_wait=90):
         time.sleep(10)
     if publish and video["status"]["privacyStatus"] != "public":
         api.videos().update(part="status", body={"id": video_id, "status": video_status("public")}).execute()
-    verified = api.videos().list(part="status,snippet,contentDetails", id=video_id).execute()["items"][0]
     expected = "public" if publish else "private"
-    if verified["snippet"]["channelId"] != CHANNEL_ID or marker(case) not in verified["snippet"].get("tags", []):
-        raise RuntimeError("Final video identity/marker mismatch")
-    if verified["status"]["privacyStatus"] != expected:
-        raise RuntimeError("Privacy verification failed")
+    # The readback lags the update: on 2026-10-10 a video that went public read as private seconds later.
+    privacy_deadline = time.monotonic() + privacy_wait
+    while True:
+        verified = api.videos().list(part="status,snippet,contentDetails", id=video_id).execute()["items"][0]
+        if verified["snippet"]["channelId"] != CHANNEL_ID or marker(case) not in verified["snippet"].get("tags", []):
+            raise RuntimeError("Final video identity/marker mismatch")
+        if verified["status"]["privacyStatus"] == expected:
+            break
+        if time.monotonic() >= privacy_deadline:
+            raise RuntimeError("Privacy verification failed")
+        time.sleep(10)
     return {"video_id": video_id, "url": "https://www.youtube.com/watch?v=" + video_id, "channel_id": CHANNEL_ID, "privacy": expected, "processing": "succeeded", "duration": verified["contentDetails"]["duration"], "title": verified["snippet"]["title"]}
 
 
