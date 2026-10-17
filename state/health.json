@@ -1,11 +1,11 @@
 {
-  "checked_at": "2026-10-16T08:48:22.303693+00:00",
+  "checked_at": "2026-10-17T08:43:46.894594+00:00",
   "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
   "status": "healthy",
   "counts": {
     "reviewed_stock": 8,
-    "ready_queue": 5,
-    "confirmed_public_cases": 2,
+    "ready_queue": 4,
+    "confirmed_public_cases": 3,
     "private_previews": 2,
     "active_reservations": 0,
     "analytics_rows": 7,
