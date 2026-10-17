@@ -84,13 +84,21 @@
       "verified_at": "2026-10-16T14:23:42.929216+00:00"
     },
     "04-jury-gift-card": {
-      "status": "processing",
+      "status": "published",
       "reserved_at": "2026-10-17T17:52:25.212300+00:00",
       "path": "content/04-jury-gift-card.json",
       "content_sha256": "03e71c1a21553b9068f40bfeeee6bc91d80a11468db33590d83c62bfcbed8d77",
       "intended_private": false,
       "upload_started_at": "2026-10-17T17:53:12.531450+00:00",
-      "video_id": "idUYMEIb_5c"
+      "video_id": "idUYMEIb_5c",
+      "url": "https://www.youtube.com/watch?v=idUYMEIb_5c",
+      "channel_id": "UCz0W-lSVvEeWYufkUVaVUKA",
+      "privacy": "public",
+      "processing": "succeeded",
+      "duration": "PT52S",
+      "title": "The Missed Jury Duty Call That Demands Gift Cards",
+      "playlist_id": "PLX_Lm80OvRHE",
+      "verified_at": "2026-10-17T17:53:39.129038+00:00"
     }
   }
 }
