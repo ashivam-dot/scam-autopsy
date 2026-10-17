@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-10-16",
+  "as_of": "2026-10-17",
   "window": {
-    "start": "2026-09-17",
-    "end": "2026-10-14"
+    "start": "2026-09-18",
+    "end": "2026-10-15"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
@@ -10,9 +10,23 @@
     "viewCount": "45",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
-    "videoCount": "2"
+    "videoCount": "3"
   },
   "videos": [
+    {
+      "id": "Eg4-4Tksw_8",
+      "title": "The Work-From-Home Job That Charges You to Work",
+      "published_at": "2026-10-16T14:23:40Z",
+      "privacy": "public",
+      "duration": "PT54S",
+      "statistics": {
+        "viewCount": "2",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
     {
       "id": "uEwovArymVc",
       "title": "The QR Code on a Package You Never Ordered",
@@ -185,7 +199,7 @@
   "analytics": [
     {
       "video": "uEwovArymVc",
-      "views": 27,
+      "views": 28,
       "engagedViews": 11,
       "averageViewDuration": 11,
       "averageViewPercentage": 21.41,
@@ -208,11 +222,11 @@
       "subscribersLost": 0
     },
     {
-      "video": "R1XyOimFHxE",
+      "video": "gXKhfz_I1GU",
       "views": 2,
-      "engagedViews": 0,
-      "averageViewDuration": 0,
-      "averageViewPercentage": 0,
+      "engagedViews": 1,
+      "averageViewDuration": 12,
+      "averageViewPercentage": 21.22,
       "likes": 0,
       "comments": 0,
       "shares": 0,
@@ -220,11 +234,11 @@
       "subscribersLost": 0
     },
     {
-      "video": "gXKhfz_I1GU",
-      "views": 2,
-      "engagedViews": 1,
-      "averageViewDuration": 12,
-      "averageViewPercentage": 21.22,
+      "video": "R1XyOimFHxE",
+      "views": 1,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
       "likes": 0,
       "comments": 0,
       "shares": 0,
