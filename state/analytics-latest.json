@@ -1,18 +1,32 @@
 {
-  "as_of": "2026-10-17",
+  "as_of": "2026-10-18",
   "window": {
-    "start": "2026-09-18",
-    "end": "2026-10-15"
+    "start": "2026-09-19",
+    "end": "2026-10-16"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
     "title": "Scam Autopsy",
-    "viewCount": "45",
+    "viewCount": "47",
     "subscriberCount": "4",
     "hiddenSubscriberCount": false,
-    "videoCount": "3"
+    "videoCount": "4"
   },
   "videos": [
+    {
+      "id": "idUYMEIb_5c",
+      "title": "The Missed Jury Duty Call That Demands Gift Cards",
+      "published_at": "2026-10-17T17:53:37Z",
+      "privacy": "public",
+      "duration": "PT52S",
+      "statistics": {
+        "viewCount": "5",
+        "likeCount": "0",
+        "dislikeCount": "0",
+        "favoriteCount": "0",
+        "commentCount": "0"
+      }
+    },
     {
       "id": "Eg4-4Tksw_8",
       "title": "The Work-From-Home Job That Charges You to Work",
