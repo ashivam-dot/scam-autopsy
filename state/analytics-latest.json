@@ -1,8 +1,8 @@
 {
-  "as_of": "2026-10-18",
+  "as_of": "2026-10-19",
   "window": {
-    "start": "2026-09-19",
-    "end": "2026-10-16"
+    "start": "2026-09-20",
+    "end": "2026-10-17"
   },
   "channel": {
     "id": "UCz0W-lSVvEeWYufkUVaVUKA",
@@ -20,7 +20,7 @@
       "privacy": "public",
       "duration": "PT52S",
       "statistics": {
-        "viewCount": "5",
+        "viewCount": "12",
         "likeCount": "0",
         "dislikeCount": "0",
         "favoriteCount": "0",
@@ -248,7 +248,31 @@
       "subscribersLost": 0
     },
     {
+      "video": "Eg4-4Tksw_8",
+      "views": 2,
+      "engagedViews": 2,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 1.3,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
       "video": "R1XyOimFHxE",
+      "views": 1,
+      "engagedViews": 0,
+      "averageViewDuration": 0,
+      "averageViewPercentage": 0,
+      "likes": 0,
+      "comments": 0,
+      "shares": 0,
+      "subscribersGained": 0,
+      "subscribersLost": 0
+    },
+    {
+      "video": "y8amwVeM8Pc",
       "views": 1,
       "engagedViews": 0,
       "averageViewDuration": 0,
@@ -265,18 +289,6 @@
       "engagedViews": 1,
       "averageViewDuration": 13,
       "averageViewPercentage": 27.43,
-      "likes": 0,
-      "comments": 0,
-      "shares": 0,
-      "subscribersGained": 0,
-      "subscribersLost": 0
-    },
-    {
-      "video": "y8amwVeM8Pc",
-      "views": 1,
-      "engagedViews": 0,
-      "averageViewDuration": 0,
-      "averageViewPercentage": 0,
       "likes": 0,
       "comments": 0,
       "shares": 0,
